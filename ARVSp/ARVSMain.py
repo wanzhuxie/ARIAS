@@ -11,6 +11,10 @@ import cv2
 import sys
 from OpenGL.GLU import *
 from PIL import Image
+from HandPointsProvider import *
+from GestureRecognizer import *
+
+
 class ARVSMain:
     def __init__(self,
         width=640,
@@ -36,8 +40,16 @@ class ARVSMain:
         self.cap4 = cv2.VideoCapture("video4.mp4")#"video0.mp4"
         self.cap5 = cv2.VideoCapture("video5.mp4")#"video0.mp4"
         self.cap6 = cv2.VideoCapture("video6.mp4")#"video0.mp4"
+        self.frameCount1=self.cap1.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frameCount2=self.cap2.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frameCount3=self.cap3.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frameCount4=self.cap4.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frameCount5=self.cap5.get(cv2.CAP_PROP_FRAME_COUNT)
+        self.frameCount6=self.cap6.get(cv2.CAP_PROP_FRAME_COUNT)
 
-        self.Mp=GetHandPoints
+        self.cap0 = cv2.VideoCapture(0)
+        self.handPointsAsker = HandPointsProvider(self.cap0)
+
     # 绘制图形
     def Draw(self):
         self.LoadTexture()
@@ -135,14 +147,45 @@ class ARVSMain:
         #刷新屏幕，产生动画效果
         glutSwapBuffers()
 
-        #修改各坐标轴的旋转角度
-        self.x += 0.2
-        self.y += 0.4
-        self.z += 0.6
+        #Get hand points
+        listPoints, img = self.handPointsAsker.GetHandPoints()
+        #get gesture #get state
+        gestureRecgonizer = GestureRecognizer(listPoints)
+        fingerState=""
+        fingerState=gestureRecgonizer.GetFingerState()
+        print (fingerState)
+
+        if fingerState == "00000":
+            self.x += 0
+            self.y += 0
+            self.z += 0
+        elif fingerState == "01000":
+            self.x += 0.1
+            self.y += 0.2
+            self.z += 0.3
+        elif fingerState == "00100":
+            self.x += 0.2
+            self.y += 0.4
+            self.z += 0.6
+        elif fingerState == "01100":
+            self.x += 0.4
+            self.y += 0.6
+            self.z += 0.8
+        else:
+            self.x += 0.2
+            self.y += 0.4
+            self.z += 0.6
 
     #加载纹理
     def LoadTexture(self):
         # 提前准备好的6个图片
+
+        if self.cap1.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount1:    self.cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.cap2.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount2:    self.cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.cap3.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount3:    self.cap3.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.cap4.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount4:    self.cap4.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.cap5.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount5:    self.cap5.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        if self.cap6.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount6:    self.cap6.set(cv2.CAP_PROP_POS_FRAMES, 0)
         success1, img1 = self.cap1.read()
         success2, img2 = self.cap2.read()
         success3, img3 = self.cap3.read()
