@@ -35,10 +35,10 @@ class GestureRecognizer:
                 result = result + "1"
         #other four
         for index in [8, 12, 16, 20]:
-            if  self.listHandPoints[index].Y <  self.listHandPoints[index-1].Y:
-                result = result + "1"
-            else:
+            if  self.listHandPoints[index].Y >=  self.listHandPoints[index-1].Y or  self.listHandPoints[index].Y >=  self.listHandPoints[index-2].Y or  self.listHandPoints[index].Y >=  self.listHandPoints[index-3].Y:
                 result = result + "0"
+            else:
+                result = result + "1"
 
         return result
 #if __name__ == '__main__':
