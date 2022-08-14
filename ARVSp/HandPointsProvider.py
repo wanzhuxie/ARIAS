@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import os
+import time
 from google.protobuf.json_format import MessageToDict
 from GeneralFunctions import *
 
@@ -16,19 +17,23 @@ class HandPointsProvider:
         #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  #设置高度
 
         success, img = self.cap.read()
+        img=cv2.flip(img, 1)
         #转换一下后RGB错误，但识别效率提升
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #timePoint1=time.perf_counter()
         results = self.hands.process(img)
+        #timePoint2=time.perf_counter()
+        #print ((timePoint2-timePoint1)*1000)
         listPoints=[]
         if results.multi_hand_landmarks:
-            for handId , handLms in enumerate(results.multi_hand_landmarks):
+            for handId , handObj in enumerate(results.multi_hand_landmarks):
                 ## 左右手
                 #handedness_dict = MessageToDict(results.multi_handedness[handId])
                 #res_handed = int(handedness_dict['classification'][0]['index'])
 
-                for id, lm in enumerate(handLms.landmark):
+                for id, point in enumerate(handObj.landmark):
                     h, w, c = img.shape
-                    cx, cy, cz= int(lm.x * w), int(lm.y * h),int(lm.z * w)
+                    cx, cy, cz= int(point.x * w), int(point.y * h),int(point.z * w)
                     listPoints.append(Point3D(cx, cy, cz))
         return listPoints,img
 

@@ -9,11 +9,12 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 import cv2
 import sys
+import time
 from OpenGL.GLU import *
 from PIL import Image
 from HandPointsProvider import *
 from GestureRecognizer import *
-
+import threading
 
 class ARVSMain:
     def __init__(self,
@@ -52,6 +53,7 @@ class ARVSMain:
 
     # 绘制图形
     def Draw(self):
+        timePoint1=time.perf_counter()
         self.LoadTexture()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -148,7 +150,7 @@ class ARVSMain:
         glutSwapBuffers()
 
         #Get hand points
-        listPoints, img = self.handPointsAsker.GetHandPoints()
+        listPoints,img = self.handPointsAsker.GetHandPoints()
         #get gesture #get state
         gestureRecgonizer = GestureRecognizer(listPoints)
         fingerState=""
@@ -175,6 +177,8 @@ class ARVSMain:
             self.x += 0.2
             self.y += 0.4
             self.z += 0.6
+        timePoint2=time.perf_counter()
+        print ((timePoint2-timePoint1)*1000)
 
     #加载纹理
     def LoadTexture(self):
