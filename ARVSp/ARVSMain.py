@@ -50,6 +50,8 @@ class ARVSMain:
         self.cap0 = cv2.VideoCapture(0)
         self.handPointsAsker = HandPointsProvider(self.cap0)
 
+        self.listHandPoints=[]
+
     #未成功
     def draw_background(self,img):
         glMatrixMode(GL_MODELVIEW)
@@ -75,16 +77,37 @@ class ARVSMain:
         glEnd()
         glDeleteTextures(textuer)
 
+    #
+    def GetHandPoints(self):
+        while True:
+            #timePoint1=time.perf_counter()
+            self.listHandPoints, self.img0=self.handPointsAsker.GetHandPoints()
+            #time.sleep(0.05)
+            for eachPoint in self.listHandPoints:
+                cx, cy, cz = eachPoint.X, eachPoint.Y, eachPoint.Z
+                radius = int(cz * 0.1) + 1
+                if radius > 0:
+                    cv2.circle(self.img0, (cx, cy), radius, (0, 255, 255), cv2.FILLED)  # 圆
+                else:
+                    radius = -radius
+                    cv2.circle(self.img0, (cx, cy), radius, (255, 0, 0), cv2.FILLED)  # 圆
+
+            cv2.imshow("Background", self.img0)
+            cv2.waitKey(20)
+            #timePoint2=time.perf_counter()
+            #print ("GetHandPoints:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+
     # 绘制图形
-    def Draw(self):
+    def Draw2(self):
+        timePoint1=time.perf_counter()
         #Get hand points
         listPoints,img = self.handPointsAsker.GetHandPoints()
-        self.draw_background(img)
 
-        timePoint1=time.perf_counter()
+        ##do not work ??????
+        #self.draw_background(img)
+
         self.LoadTexture()
-        timePoint2=time.perf_counter()
-        print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glLoadIdentity()
@@ -132,6 +155,68 @@ class ARVSMain:
             self.y += 0.2
             self.z += 0.1
 
+        timePoint2=time.perf_counter()
+        print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+
+    def Draw(self):
+        timePoint1=time.perf_counter()
+
+        ##do not work ??????
+        #self.draw_background(img)
+
+        ##15-19ms
+        self.LoadTexture()
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        glLoadIdentity()
+
+        #沿z轴平移
+        glTranslate(0.0, 0.0, -5.0)
+
+        #分别绕x,y,z轴旋转
+        glRotatef(self.x, 1.0, 0.0, 0.0)
+        glRotatef(self.y, 0.0, 1.0, 0.0)
+        glRotatef(self.z, 0.0, 0.0, 1.0)
+
+        self.DrawBox()
+
+        #刷新屏幕，产生动画效果
+        glutSwapBuffers()
+
+        #====0.02-0.05ms====
+        #get gesture #get state
+        gestureRecgonizer = GestureRecognizer(self.listHandPoints)
+        fingerState=""
+        fingerState=gestureRecgonizer.GetFingerState()
+        print (fingerState)
+        #====0.02-0.05ms====
+
+        if fingerState == "00000":
+            self.x += 0
+            self.y += 0
+            self.z += 0
+        elif fingerState == "01000":
+            self.x += 0.2
+            self.y += 0.4
+            self.z += 0.6
+        elif fingerState == "01100":
+            self.x += 0.4
+            self.y += 0.8
+            self.z += 1.2
+        elif fingerState == "01110":
+            self.x += 1
+            self.y += 2
+            self.z += 3
+        else:
+            self.x += 0.0
+            self.y += 0.0
+            self.z += 0.0
+
+        timePoint2=time.perf_counter()
+        #print ("Draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+
+    # Box 0.1-0.2ms
     def DrawBox(self):
         #face1
         glBindTexture(GL_TEXTURE_2D, 0)
@@ -211,26 +296,9 @@ class ARVSMain:
         glVertex3f(-1.0, 1.0, -1.0)
         glEnd()
 
-    def CreateOneTexture(self,i,cap,frameCount):
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        success, img = cap.read()
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-        if i == 1:
-            self.img1=img
-        elif i==2:
-            self.img2=img
-        elif i==3:
-            self.img3=img
-        elif i==4:
-            self.img4=img
-        elif i==5:
-            self.img5=img
-        elif i==6:
-            self.img6=img
 
-    #加载纹理
-    def LoadTexture2(self):
+    #加载纹理20-25ms CPU 100%
+    def LoadTexture(self):
         if self.cap1.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount1:    self.cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
         if self.cap2.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount2:    self.cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
         if self.cap3.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount3:    self.cap3.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -263,8 +331,9 @@ class ARVSMain:
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-    #加载纹理-部分多线程
-    def LoadTexture(self):
+
+    #加载纹理多线程 15-19ms CPU 65%
+    def LoadTexture2(self):
         thread_list = []
         t1 = threading.Thread(target=self.CreateOneTexture,args=( 1, self.cap1, self.frameCount1))
         t2 = threading.Thread(target=self.CreateOneTexture,args=( 2, self.cap2, self.frameCount2))
@@ -305,9 +374,25 @@ class ARVSMain:
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+    def CreateOneTexture(self,i,cap,frameCount):
+        if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        success, img = cap.read()
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+        if i == 1:
+            self.img1=img
+        elif i==2:
+            self.img2=img
+        elif i==3:
+            self.img3=img
+        elif i==4:
+            self.img4=img
+        elif i==5:
+            self.img5=img
+        elif i==6:
+            self.img6=img
 
     def InitGL(self, width, height):
-        #self.LoadTexture()
         glEnable(GL_TEXTURE_2D)
         glClearColor(1.0, 1.0, 1.0, 0.0)
         glClearDepth(1.0)
@@ -333,6 +418,9 @@ class ARVSMain:
 
 if __name__ == '__main__':
     w = ARVSMain()
+    t = threading.Thread(target=w.GetHandPoints)
+    t.start()
     w.MainLoop()
+
 
 

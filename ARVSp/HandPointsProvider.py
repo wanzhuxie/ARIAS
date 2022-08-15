@@ -19,11 +19,12 @@ class HandPointsProvider:
         success, img = self.cap.read()
         img=cv2.flip(img, 1)
         #转换一下后RGB错误，但识别效率提升
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)//cv2.COLOR_BGR2RGB
         #timePoint1=time.perf_counter()
-        results = self.hands.process(img)
+        results = self.hands.process(imgRGB)
         #timePoint2=time.perf_counter()
         #print ((timePoint2-timePoint1)*1000)
+        #img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)//cv2.COLOR_BGR2RGB
         listPoints=[]
         if results.multi_hand_landmarks:
             for handId , handObj in enumerate(results.multi_hand_landmarks):
@@ -35,10 +36,12 @@ class HandPointsProvider:
                     h, w, c = img.shape
                     cx, cy, cz= int(point.x * w), int(point.y * h),int(point.z * w)
                     listPoints.append(Point3D(cx, cy, cz))
+
         return listPoints,img
 
 if __name__=="__main__":
     cap = cv2.VideoCapture(0)
+
     pointsAsker=HandPointsProvider(cap)
 
     while True:
@@ -52,7 +55,6 @@ if __name__=="__main__":
                 radius = -radius
                 cv2.circle(img, (cx, cy), radius, (255, 0, 0), cv2.FILLED)  # 圆
 
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         cv2.imshow("Image", img)
 
         if ord('q') == cv2.waitKey(1):
