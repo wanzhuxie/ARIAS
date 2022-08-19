@@ -19,14 +19,8 @@ import threading
 class ARVSMain:
     def __init__(self,
         width=640,
-        height=480,
-        title='ARVS'.encode()):
-        glutInit(sys.argv)
-        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-        glutInitWindowSize(width, height)
-        self.window = glutCreateWindow(title)
-        glutDisplayFunc(self.Draw)
-        glutIdleFunc(self.Draw)
+        height=480):
+        
         self.InitGL(width, height)
 
         #绕各坐标轴旋转的角度
@@ -77,6 +71,10 @@ class ARVSMain:
         glEnd()
         glDeleteTextures(textuer)
 
+
+
+
+
     #
     def GetHandPoints(self):
         while True:
@@ -104,7 +102,7 @@ class ARVSMain:
         listPoints,img = self.handPointsAsker.GetHandPoints()
 
         ##do not work ??????
-        #self.draw_background(img)
+        self.draw_background(img)
 
         self.LoadTexture()
 
@@ -393,6 +391,13 @@ class ARVSMain:
             self.img6=img
 
     def InitGL(self, width, height):
+        glutInit()
+        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
+        glutInitWindowSize(width, height)
+        self.window = glutCreateWindow("ARVS")
+        glutDisplayFunc(self.Draw)
+        glutIdleFunc(self.Draw)
+
         glEnable(GL_TEXTURE_2D)
         glClearColor(1.0, 1.0, 1.0, 0.0)
         glClearDepth(1.0)
