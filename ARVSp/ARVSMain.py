@@ -144,10 +144,10 @@ class ARVSMain:
 
         glLoadIdentity()
 
-        #沿z轴平移
+        #Translate along z-axis
         glTranslate(0.0, 0.0, -5.0)
 
-        #分别绕x,y,z轴旋转
+        #Rotate around the x, y, z axes respectively
         glRotatef(self.x, 1.0, 0.0, 0.0)
         glRotatef(self.y, 0.0, 1.0, 0.0)
         glRotatef(self.z, 0.0, 0.0, 1.0)
@@ -157,7 +157,7 @@ class ARVSMain:
         timePoint4=time.perf_counter()
         #print ((timePoint4-timePoint3)*1000)
 
-        #刷新屏幕，产生动画效果
+        #Refresh screen
         glutSwapBuffers()
 
         #get gesture #get state
@@ -193,7 +193,7 @@ class ARVSMain:
     def Draw(self):
         timePoint1=time.perf_counter()
 
-        ##do not work ??????
+        #background
         if self.InitCap0:
             self.draw_background(self.img0)
 
@@ -202,17 +202,17 @@ class ARVSMain:
 
         glLoadIdentity()
 
-        #沿z轴平移
+        #Translate along z-axis
         glTranslate(0.0, 0.0, -5.0)
 
-        #分别绕x,y,z轴旋转
+        #Rotate around the x, y, z axes respectively
         glRotatef(self.x, 1.0, 0.0, 0.0)
         glRotatef(self.y, 0.0, 1.0, 0.0)
         glRotatef(self.z, 0.0, 0.0, 1.0)
 
         self.DrawBox()
 
-        #刷新屏幕，产生动画效果
+        #Refresh screen
         glutSwapBuffers()
 
         #====0.02-0.05ms====
@@ -379,10 +379,10 @@ class ARVSMain:
         thread_list.append(t6)
 
         for t in thread_list:
-            #t.setDaemon(True)  # 设置为守护线程，不会因主线程结束而中断
+            #t.setDaemon(True)  # daemon thread will not be interrupted by the main thread ends
             t.start()
         for t in thread_list:
-            t.join() # 子线程全部加入，主线程等所有子线程运行完毕
+            t.join() # the main thread wait all sub  threat completed
 
         listFrame=[]
         listFrame.append(self.img1)
