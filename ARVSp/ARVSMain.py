@@ -20,10 +20,9 @@ class ARVSMain:
     def __init__(self,
         width=640,
         height=480):
-
         self.InitGL(width, height)
 
-        #绕各坐标轴旋转的角度
+        #rotate around XYZ axes
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
@@ -45,7 +44,37 @@ class ARVSMain:
         self.handPointsAsker = HandPointsProvider(self.cap0)
         self.listHandPoints=[]
         self.InitCap0,self.img0=self.cap0.read()
-    #未成功
+
+    # InitGL
+    def InitGL(self, width, height):
+        glutInit()
+        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
+        glutInitWindowSize(width, height)
+        self.window = glutCreateWindow("ARVS")
+        glutDisplayFunc(self.Draw)
+        glutIdleFunc(self.Draw)
+
+        glEnable(GL_TEXTURE_2D)
+        glClearColor(1.0, 1.0, 1.0, 0.0)
+        glClearDepth(1.0)
+        glDepthFunc(GL_LESS)
+        glShadeModel(GL_SMOOTH)
+
+        # Back culling, blanking [the effect is not obvious]
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_BACK)
+        glEnable(GL_POINT_SMOOTH)
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_POLYGON_SMOOTH)
+        glMatrixMode(GL_PROJECTION)
+        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST)
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+        glHint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST)
+        glLoadIdentity()
+        gluPerspective(45.0, float(width) / float(height), 0.1, 100.0)
+        glMatrixMode(GL_MODELVIEW)
+
+    #draw_background
     def draw_background(self,img):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         # Setting background image project_matrix and model_matrix.
@@ -54,11 +83,11 @@ class ARVSMain:
         gluPerspective(33.7, 1.3, 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        bg_image = cv2.flip(img, 0)
-        bg_image = Image.fromarray(bg_image)
-        ix = bg_image.size[0]
-        iy = bg_image.size[1]
-        bg_image = bg_image.tobytes("raw", "BGRX", 0, -1)
+        bg_img = cv2.flip(img, 0)
+        bg_img = Image.fromarray(bg_img)
+        ix = bg_img.size[0]
+        iy = bg_img.size[1]
+        bg_img = bg_img.tobytes("raw", "BGRX", 0, -1)
 
 
         # Create background texture
@@ -66,7 +95,7 @@ class ARVSMain:
         glBindTexture(GL_TEXTURE_2D, texid)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, bg_image)
+        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, bg_img)
 
         glTranslatef(0.0, 0.0, -10.0)
         glBegin(GL_QUADS)
@@ -79,7 +108,6 @@ class ARVSMain:
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-4.0, 3.0, 0.0)
         glEnd()
-
 
     #call this mathed through multi threat
     def GetHandPoints(self):
@@ -101,7 +129,7 @@ class ARVSMain:
             #timePoint2=time.perf_counter()
             #print ("GetHandPoints:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
 
-    # 绘制图形
+    # draw main
     def Draw2(self):
         timePoint1=time.perf_counter()
         #Get hand points
@@ -161,7 +189,7 @@ class ARVSMain:
 
         timePoint2=time.perf_counter()
         print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
-
+    #draw main(using GetHandPoints through multi-threat)
     def Draw(self):
         timePoint1=time.perf_counter()
 
@@ -300,7 +328,7 @@ class ARVSMain:
         glEnd()
 
 
-    #加载纹理20-25ms CPU 100%
+    #LoadTexture 20-25ms [the Overall CPU occupancy is  65%]
     def LoadTexture(self):
         if self.cap1.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount1:    self.cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
         if self.cap2.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount2:    self.cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -334,8 +362,7 @@ class ARVSMain:
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-
-    #加载纹理多线程 15-19ms CPU 65%
+    #LoadTexture(multi-threat) 15-19ms [the Overall CPU occupancy is 100%]
     def LoadTexture2(self):
         thread_list = []
         t1 = threading.Thread(target=self.CreateOneTexture,args=( 1, self.cap1, self.frameCount1))
@@ -377,6 +404,7 @@ class ARVSMain:
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+    #Use with LoadTexture(multi-threat)
     def CreateOneTexture(self,i,cap,frameCount):
         if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -395,34 +423,7 @@ class ARVSMain:
         elif i==6:
             self.img6=img
 
-    def InitGL(self, width, height):
-        glutInit()
-        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-        glutInitWindowSize(width, height)
-        self.window = glutCreateWindow("ARVS")
-        glutDisplayFunc(self.Draw)
-        glutIdleFunc(self.Draw)
-
-        glEnable(GL_TEXTURE_2D)
-        glClearColor(1.0, 1.0, 1.0, 0.0)
-        glClearDepth(1.0)
-        glDepthFunc(GL_LESS)
-        glShadeModel(GL_SMOOTH)
-
-        #背面剔除，消隐
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
-        glEnable(GL_POINT_SMOOTH)
-        glEnable(GL_LINE_SMOOTH)
-        glEnable(GL_POLYGON_SMOOTH)
-        glMatrixMode(GL_PROJECTION)
-        glHint(GL_POINT_SMOOTH_HINT,GL_NICEST)
-        glHint(GL_LINE_SMOOTH_HINT,GL_NICEST)
-        glHint(GL_POLYGON_SMOOTH_HINT,GL_FASTEST)
-        glLoadIdentity()
-        gluPerspective(45.0, float(width)/float(height), 0.1, 100.0)
-        glMatrixMode(GL_MODELVIEW)
-
+    #MainLoop
     def MainLoop(self):
         glutMainLoop()
 
