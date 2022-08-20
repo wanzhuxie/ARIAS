@@ -20,7 +20,7 @@ class ARVSMain:
     def __init__(self,
         width=640,
         height=480):
-        
+
         self.InitGL(width, height)
 
         #绕各坐标轴旋转的角度
@@ -43,39 +43,45 @@ class ARVSMain:
 
         self.cap0 = cv2.VideoCapture(0)
         self.handPointsAsker = HandPointsProvider(self.cap0)
-
         self.listHandPoints=[]
-
+        self.InitCap0,self.img0=self.cap0.read()
     #未成功
     def draw_background(self,img):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        # Setting background image project_matrix and model_matrix.
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(33.7, 1.3, 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        h, w, c = img.shape
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glEnable(GL_TEXTURE_2D)
-        textuer=1
-        glGenTextures(1,textuer)
-        glBindTexture(GL_TEXTURE_2D, textuer)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img)
+        bg_image = cv2.flip(img, 0)
+        bg_image = Image.fromarray(bg_image)
+        ix = bg_image.size[0]
+        iy = bg_image.size[1]
+        bg_image = bg_image.tobytes("raw", "BGRX", 0, -1)
+
+
+        # Create background texture
+        texid = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texid)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, bg_image)
+
+        glTranslatef(0.0, 0.0, -10.0)
         glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0)
-        glVertex2f(0.0, 0.0)
-        glTexCoord2f(1.0, 0.0)
-        glVertex2f(640, 0.0)
-        glTexCoord2f(1.0, 1.0)
-        glVertex2f(640, 480)
         glTexCoord2f(0.0, 1.0)
-        glVertex2f(0.0, 480)
+        glVertex3f(-4.0, -3.0, 0.0)
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(4.0, -3.0, 0.0)
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(4.0, 3.0, 0.0)
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(-4.0, 3.0, 0.0)
         glEnd()
-        glDeleteTextures(textuer)
 
 
-
-
-
-    #
+    #call this mathed through multi threat
     def GetHandPoints(self):
         while True:
             #timePoint1=time.perf_counter()
@@ -90,7 +96,7 @@ class ARVSMain:
                     radius = -radius
                     cv2.circle(self.img0, (cx, cy), radius, (255, 0, 0), cv2.FILLED)  # 圆
 
-            cv2.imshow("Background", self.img0)
+            #cv2.imshow("Background", self.img0)
             cv2.waitKey(20)
             #timePoint2=time.perf_counter()
             #print ("GetHandPoints:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
@@ -160,12 +166,11 @@ class ARVSMain:
         timePoint1=time.perf_counter()
 
         ##do not work ??????
-        #self.draw_background(img)
+        if self.InitCap0:
+            self.draw_background(self.img0)
 
         ##15-19ms
         self.LoadTexture()
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         glLoadIdentity()
 
@@ -185,9 +190,9 @@ class ARVSMain:
         #====0.02-0.05ms====
         #get gesture #get state
         gestureRecgonizer = GestureRecognizer(self.listHandPoints)
-        fingerState=""
         fingerState=gestureRecgonizer.GetFingerState()
-        print (fingerState)
+        if fingerState!="":
+            print (fingerState)
         #====0.02-0.05ms====
 
         if fingerState == "00000":
