@@ -15,12 +15,27 @@ from PIL import Image
 from HandPointsProvider import *
 from GestureRecognizer import *
 import threading
+import numpy as np
 
 class ARVSMain:
-    def __init__(self,
-        width=640,
-        height=480):
+    def __init__(self):
+        self.cap0 = cv2.VideoCapture(0)
+        width, height = map(int, (self.cap0.get(3), self.cap0.get(4)))
+
         self.InitGL(width, height)
+
+        #thinkpad
+        self.camera_matrix = np.array([
+            [621.6733	,0			,301.8697],
+            [0			,596.7352 	,223.5491],
+            [0			,0			,1       ], ])
+        self.dist_coeff = np.array([-0.4172, -0.1135, -0.0010, -0.0061, 0.7764])
+
+        self.handPointsAsker = HandPointsProvider(self.cap0)
+        self.listHandPoints=[]
+
+        self.img0 = None
+        #_,self.img0=self.cap0.read()
 
         #rotate around XYZ axes
         self.x = 0.0
@@ -40,10 +55,6 @@ class ARVSMain:
         self.frameCount5=self.cap5.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frameCount6=self.cap6.get(cv2.CAP_PROP_FRAME_COUNT)
 
-        self.cap0 = cv2.VideoCapture(0)
-        self.handPointsAsker = HandPointsProvider(self.cap0)
-        self.listHandPoints=[]
-        self.InitCap0,self.img0=self.cap0.read()
 
     # InitGL
     def InitGL(self, width, height):
@@ -135,7 +146,7 @@ class ARVSMain:
         #Get hand points
         listPoints,img = self.handPointsAsker.GetHandPoints()
 
-        ##do not work ??????
+
         self.draw_background(img)
 
         self.LoadTexture()
@@ -194,7 +205,7 @@ class ARVSMain:
         timePoint1=time.perf_counter()
 
         #background
-        if self.InitCap0:
+        if self.img0 is not None:
             self.draw_background(self.img0)
 
         ##15-19ms
