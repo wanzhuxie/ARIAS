@@ -13,12 +13,12 @@ class HandPointsProvider:
 
     def GetHandPoints(self):
         #cap = cv2.VideoCapture(0)
-        #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  #设置宽度
-        #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  #设置高度
+        #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  #Width
+        #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  #Hight
 
         success, img = self.cap.read()
         img=cv2.flip(img, 1)
-        #转换一下后RGB错误，但识别效率提升
+        #RGB error after conversion, but recognition efficiency is improved
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)//cv2.COLOR_BGR2RGB
         #timePoint1=time.perf_counter()
         results = self.hands.process(imgRGB)
