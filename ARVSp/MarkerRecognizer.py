@@ -22,22 +22,33 @@ class MarkerRecognizer:
         self.iMarkerSize = self.iCellCountWithFrame * self.iCellSize
 
         self.iStandardMarker=np.array([[0, 0],
-                              [0, self.iMarkerSize - 1],
-                              [self.iMarkerSize - 1, self.iMarkerSize - 1],
-                              [self.iMarkerSize - 1, 0]])
+                              [0, self.iMarkerSize],
+                              [self.iMarkerSize, self.iMarkerSize],
+                              [self.iMarkerSize, 0]])
 
     def PreProcess(self,img):
         #img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        img_gray=cv2.Canny(img, 50, 100)
-        cv2.imshow("Canny",img_gray)
-        return img_gray
+        preResult=cv2.Canny(img, 50, 100)
+        return preResult
+    def PreProcess2(self,img):
+        img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        #img_gray=cv2.Canny(img_gray, 50, 100)
+        thresh_size = (50//4)*2 + 1
+        img_adaptiveThreshold=cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY , thresh_size, thresh_size*0.8)#THRESH_BINARY_INV
+        kernel=np.ones((3,3),np.uint8)
+        preResult=cv2.erode(img_adaptiveThreshold,kernel)
+        #cv2.imshow("img_gray",img_gray)
+        cv2.imshow("img_adaptiveThreshold",img_adaptiveThreshold)
+        #cv2.imshow("preResult",preResult)
+        return preResult
 
     def DetectPossibleMarker(self,img):
-        img_gray=cv2.Canny(img, 50, 100)
-        cv2.imshow("Canny",img_gray)
+        preResult=self.PreProcess(img)
+        cv2.imshow("preResult",preResult)
+
 
         listPossibleMarkers=[]
-        contours, hierarchy = cv2.findContours(img_gray,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(preResult,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             #print(contours[i])
             length=cv2.arcLength(contours[i], False)
@@ -73,7 +84,7 @@ class MarkerRecognizer:
             dMax=max(dLen0,dLen1,dLen2,dLen3)
             #print(dMin,dMax)
 
-            if dMax>dMin*2 :
+            if dMax>dMin*3 :
                 continue
 
             #print("=========================")
@@ -89,17 +100,6 @@ class MarkerRecognizer:
         return listPossibleMarkers
 
 
-    def PreProcess2(self,img):
-        img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        img_gray=cv2.Canny(img_gray, 50, 100)
-        thresh_size = (50//4)*2 + 1
-        img_adaptiveThreshold=cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV , thresh_size, thresh_size*0.8)
-        kernel=np.ones((3,3),np.uint8)
-        img_morphologyEx=cv2.morphologyEx(img_adaptiveThreshold, cv2.MORPH_CLOSE, kernel)
-        cv2.imshow("img_gray",img_gray)
-        cv2.imshow("img_adaptiveThreshold",img_adaptiveThreshold)
-        cv2.imshow("img_morphologyEx",img_morphologyEx)
-        return img_morphologyEx
 
     def Recognize(self, img0, min_size, min_side_length):
         listPossibleMarkers=self.DetectPossibleMarker(img0)
@@ -107,9 +107,8 @@ class MarkerRecognizer:
 
         #cellPixelCount 方块标准像素数
         cellPixelCount=self.iCellSize**2
-        print("cell standard pixel count:",cellPixelCount)
-        #frameSide_Pixel_Threshold  cellPixelCount*7*(4/3) 边框不为0的像素数至少为总数700的四分之三
-        side_Pixel_Threshold=cellPixelCount*self.iCellCountWithFrame/4*3
+        #frameSide_Pixel_Threshold  cellPixelCount*7*(4/3) 边框黑色，像素数最多总数700的四分之一
+        side_Pixel_Threshold=cellPixelCount*self.iCellCountWithFrame/4
         #
         for i in range (len(listPossibleMarkers)):
             #print("===================")
@@ -122,14 +121,18 @@ class MarkerRecognizer:
 
             # extract marker
             image_marker=cv2.warpPerspective(img_gray,M,(self.iMarkerSize, self.iMarkerSize))
+            #cv2.imshow("image_marker",image_marker)
             # input img should be gray
-            _,marker_threshold=cv2.threshold(image_marker, 125, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
+            _,marker_threshold=cv2.threshold(image_marker, 180, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+            #cv2.imshow("marker_threshold",marker_threshold)
+            kernel = np.ones((3, 3), np.uint8)
+            marker_threshold=cv2.erode(marker_threshold,kernel)
+            #cv2.imshow("erode",marker_threshold)
             # is it real marker? check cell pixel
             #h,w,c = marker_threshold.shape
             #print("total pixel:",w*h)
 
-            #upper frame
+            #4 side frames
             sideLen=marker_threshold.shape[1] // self.iCellCountWithFrame
             upper_frame=marker_threshold[:, :sideLen]
             Lower_frame=marker_threshold[:, sideLen*(self.iCellCountWithFrame-1):]
@@ -139,17 +142,31 @@ class MarkerRecognizer:
             lower_PixelCount=cv2.countNonZero(Lower_frame)
             left__PixelCount=cv2.countNonZero(left__frame)
             right_PixelCount=cv2.countNonZero(right_frame)
-            print("frame side pixel count:",upper_PixelCount,lower_PixelCount,left__PixelCount,right_PixelCount)
+            #print("frame side pixel count:",upper_PixelCount,lower_PixelCount,left__PixelCount,right_PixelCount)
 
-            # note: the algorithms are diff when in PreProcess(Canny,adaptiveThreshold)
-            if upper_PixelCount<side_Pixel_Threshold \
-            or lower_PixelCount<side_Pixel_Threshold \
-            or left__PixelCount<side_Pixel_Threshold \
-            or right_PixelCount<side_Pixel_Threshold:
+            # note: the algorithms are diff when in PreProcess(Canny,adaptiveThreshold)!!!!!!!!!!!!!!!!!!!!!!
+            if upper_PixelCount>side_Pixel_Threshold \
+            or lower_PixelCount>side_Pixel_Threshold \
+            or left__PixelCount>side_Pixel_Threshold \
+            or right_PixelCount>side_Pixel_Threshold:
                 continue
 
-            #20220821 continue later!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #20220821 continue later!!!!!!!!!!!!!!!
+            #get the marker's information
 
+            markerInfo=np.zeros([self.iCellCount,self.iCellCount])
+            for x in range (0,self.iCellCount):
+                for y in range (0,self.iCellCount):
+                    cell_img=marker_threshold[int((y+1)*self.iCellSize):\
+                                              int((y+2)*self.iCellSize),\
+                                              int((x+1)*self.iCellSize):\
+                                              int((x+2)*self.iCellSize)]
+                    NonZeroCount = cv2.countNonZero(cell_img)
+                    print((x+1),(y+1),"cell_PixelCount",NonZeroCount)
+                    if NonZeroCount>cellPixelCount/2:
+                        markerInfo[x][y]=1
+            print ("===============marker info===============")
+            print (markerInfo)
             cv2.imshow("marker",marker_threshold)
 
 
@@ -157,10 +174,10 @@ class MarkerRecognizer:
 
 
 if __name__ == '__main__0':
-    arr1 = np.array([1,0])
-    arr2 = np.array([0,1])
-    d=GetAngle(arr1,arr2)
-    print(d)
+    for x in range(1, 10):
+        for y in range(1, 10):
+            #cell_img = marker_threshold[y / self.iCellCountWithFrame:(y + 1) / self.iCellCountWithFrame,x / self.iCellCountWithFrame:(x + 1) / self.iCellCountWithFrame]
+            print(y / 10 , (y + 1)/10 , x / 10 , (x + 1)/10)
 
 
 if __name__ == '__main__':
