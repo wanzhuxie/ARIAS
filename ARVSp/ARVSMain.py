@@ -14,23 +14,36 @@ from OpenGL.GLU import *
 from PIL import Image
 from HandPointsProvider import *
 from GestureRecognizer import *
+from MarkerRecognizer import *
 import threading
 import numpy as np
 
 class ARVSMain:
     def __init__(self):
         self.cap0 = cv2.VideoCapture(0)
-        width, height = map(int, (self.cap0.get(3), self.cap0.get(4)))
+        self.width, self.height = map(int, (self.cap0.get(3), self.cap0.get(4)))
 
-        self.InitGL(width, height)
+        self.InitGL(self.width, self.height)
+        listState=["Initial","FrontView","Move","Rotate","Zoom"]
+        self.curState="Initial"
 
-        #thinkpad
+        #world corner coor of the marker
+        self.worldMarkerCorner=np.array([[-0.5, -0.5, 0],[-0.5, 0.5, 0],[0.5, 0.5, 0],[0.5, -0.5, 0]],dtype = np.float64)
+        #thinkpad camera
         self.camera_matrix = np.array([
             [621.6733	,0			,301.8697],
             [0			,596.7352 	,223.5491],
-            [0			,0			,1       ], ])
-        self.dist_coeff = np.array([-0.4172, -0.1135, -0.0010, -0.0061, 0.7764])
+            [0			,0			,1       ]],dtype = np.float64)
+        self.dist_coeff = np.array([-0.4172, -0.1135, -0.0010, -0.0061, 0.7764] , dtype = np.float64)
 
+        #ConstructProjectionMatrix
+        self.projectionMatrix=self.ConstructProjectionMatrix(self.camera_matrix,self.width, self.height,0.01,100)
+        self.modelMatrix=None
+
+        self.bCreatedArBox=False
+        self.bAppearNewMarker=False
+
+        #handPoints
         self.handPointsAsker = HandPointsProvider(self.cap0)
         self.listHandPoints=[]
 
@@ -55,6 +68,7 @@ class ARVSMain:
         self.frameCount5=self.cap5.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frameCount6=self.cap6.get(cv2.CAP_PROP_FRAME_COUNT)
 
+        self.markerRecognizer=MarkerRecognizer()
 
     # InitGL
     def InitGL(self, width, height):
@@ -119,6 +133,37 @@ class ARVSMain:
         glTexCoord2f(0.0, 0.0)
         glVertex3f(-4.0, 3.0, 0.0)
         glEnd()
+
+    def ConstructProjectionMatrix(self, cameraMatrix, width, height, near_plane=0.01, far_plane=100.0):
+        P = np.zeros(shape=(4, 4), dtype=np.float32)
+
+        fx, fy = cameraMatrix[0, 0], cameraMatrix[1, 1]
+        cx, cy = cameraMatrix[0, 2], cameraMatrix[1, 2]
+
+        P[0, 0] = 2 * fx / width
+        P[1, 1] = 2 * fy / height
+        P[2, 0] = 1 - 2 * cx / width
+        P[2, 1] = 2 * cy / height - 1
+        P[2, 2] = -(far_plane + near_plane) / (far_plane - near_plane)
+        P[2, 3] = -1.0
+        P[3, 2] = - (2 * far_plane * near_plane) / (far_plane - near_plane)
+
+        return P.flatten()
+    def ConstructModelMatrix(self,rvec,tvec):
+        R, _ = cv2.Rodrigues(rvec)
+
+        Rx = np.array([
+            [1, 0, 0],
+            [0, -1, 0],
+            [0, 0, -1]
+        ])
+
+        tvec = tvec.flatten().reshape((3, 1))
+
+        transform_matrix = Rx @ np.hstack((R, tvec))
+        M = np.eye(4)
+        M[:3, :] = transform_matrix
+        return M.T.flatten()
 
     #call this mathed through multi threat
     def GetHandPoints(self):
@@ -205,8 +250,10 @@ class ARVSMain:
         timePoint1=time.perf_counter()
 
         #background
+        listMarkers=[]
         if self.img0 is not None:
             self.draw_background(self.img0)
+            listMarkers=self.markerRecognizer.Recognize(self.img0)
 
         ##15-19ms
         self.LoadTexture()
@@ -216,16 +263,46 @@ class ARVSMain:
         #Translate along z-axis
         glTranslate(0.0, 0.0, -5.0)
 
-        #Rotate around the x, y, z axes respectively
-        glRotatef(self.x, 1.0, 0.0, 0.0)
-        glRotatef(self.y, 0.0, 1.0, 0.0)
-        glRotatef(self.z, 0.0, 0.0, 1.0)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glMultMatrixf(self.projectionMatrix)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        #glEnable(GL_DEPTH_TEST)
+        #glShadeModel(GL_FLAT)
 
-        self.DrawBox()
+        for i in range (len(listMarkers)):
+            eachMarker=np.array(listMarkers[i],dtype=np.float64)
+            retval, rvec, tvec = cv2.solvePnP(self.worldMarkerCorner,eachMarker,self.camera_matrix,self.dist_coeff)
+            self.modelMatrix=self.ConstructModelMatrix(rvec, tvec)
+            glLoadMatrixf(self.modelMatrix)
 
-        #Refresh screen
+
+            #Rotate around the x, y, z axes respectively
+            glRotatef(self.x, 1.0, 0.0, 0.0)
+            glRotatef(self.y, 0.0, 1.0, 0.0)
+            glRotatef(self.z, 0.0, 0.0, 1.0)
+
+            self.DrawBox()
+            self.bAppearNewMarker = True
+
+        if self.bCreatedArBox and not self.bAppearNewMarker:
+            if self.curState == "Initial":
+                glMatrixMode(GL_PROJECTION)
+                glLoadIdentity()
+                glLoadMatrixf(self.projectionMatrix)
+
+                glMatrixMode(GL_MODELVIEW)
+                glLoadIdentity()
+                glEnable(GL_DEPTH_TEST)
+                glShadeModel(GL_SMOOTH)
+                glLoadMatrixf(self.modelMatrix)
+            DrawARBox()
+
+            #Refresh screen
         glutSwapBuffers()
 
+        '''
         #====0.02-0.05ms====
         #get gesture #get state
         gestureRecgonizer = GestureRecognizer(self.listHandPoints)
@@ -257,6 +334,8 @@ class ARVSMain:
 
         timePoint2=time.perf_counter()
         #print ("Draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+        '''
+
 
     # Box 0.1-0.2ms
     def DrawBox(self):

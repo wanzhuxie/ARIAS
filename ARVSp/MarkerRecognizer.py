@@ -84,7 +84,7 @@ class MarkerRecognizer:
             dMax=max(dLen0,dLen1,dLen2,dLen3)
             #print(dMin,dMax)
 
-            if dMax>dMin*3 :
+            if dMax>dMin*4 :
                 continue
 
             #print("=========================")
@@ -101,7 +101,7 @@ class MarkerRecognizer:
 
 
 
-    def Recognize(self, img0, min_size, min_side_length):
+    def Recognize(self, img0):
         listPossibleMarkers=self.DetectPossibleMarker(img0)
         img_gray=cv2.cvtColor(img0,cv2.COLOR_BGR2GRAY)
 
@@ -110,6 +110,7 @@ class MarkerRecognizer:
         #frameSide_Pixel_Threshold  cellPixelCount*7*(4/3) 边框黑色，像素数最多总数700的四分之一
         side_Pixel_Threshold=cellPixelCount*self.iCellCountWithFrame/4
         #
+        listRealMarkers = []
         for i in range (len(listPossibleMarkers)):
             #print("===================")
             eachMarker=listPossibleMarkers[i].astype(np.float32)
@@ -169,8 +170,14 @@ class MarkerRecognizer:
             print (markerInfo)
             cv2.imshow("marker",marker_threshold)
 
+            corners=listPossibleMarkers[i]
+            ##sub-pixel
+            #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
+            #corners = cv2.cornerSubPix(img_gray, corners, (5, 5), (-1, -1), criteria)
+            #collect final markers
+            listRealMarkers.append(corners)
 
-        return img0
+        return listRealMarkers
 
 
 if __name__ == '__main__0':
@@ -185,7 +192,7 @@ if __name__ == '__main__':
     MR=MarkerRecognizer()
     while True:
         _,img=cap0.read()
-        img=MR.Recognize(img,100,10)
+        img=MR.Recognize(img)
 
 
         #cv2.imshow("Background", img)
