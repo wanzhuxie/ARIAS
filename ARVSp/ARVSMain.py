@@ -26,9 +26,12 @@ class ARVSMain:
         self.InitGL(self.width, self.height)
         listState=["Initial","FrontView","Move","Rotate","Zoom"]
         self.curState="Initial"
+        self._bKeepState=False
+        self._strLastFingerState=""
 
         #world corner coor of the marker
         self.worldMarkerCorner=np.array([[-0.5, -0.5, 0],[-0.5, 0.5, 0],[0.5, 0.5, 0],[0.5, -0.5, 0]],dtype = np.float64)
+        self.mappingWidth=0.4
         #thinkpad camera
         self.camera_matrix = np.array([
             [621.6733	,0			,301.8697],
@@ -51,10 +54,12 @@ class ARVSMain:
         #_,self.img0=self.cap0.read()
 
         #rotate around XYZ axes
-        self.x = 0.0
-        self.y = 0.0
-        self.z = 0.0
-
+        self._RotateX = 0.0
+        self._RotateY = 0.0
+        self._RotateZ = 0.0
+        self._dMoveX =0
+        self._dMoveY =0
+        self._dZoom=10
         self.cap1 = cv2.VideoCapture("video1.mp4")
         self.cap2 = cv2.VideoCapture("video2.mp4")
         self.cap3 = cv2.VideoCapture("video3.mp4")
@@ -204,9 +209,9 @@ class ARVSMain:
         glTranslate(0.0, 0.0, -5.0)
 
         #Rotate around the x, y, z axes respectively
-        glRotatef(self.x, 1.0, 0.0, 0.0)
-        glRotatef(self.y, 0.0, 1.0, 0.0)
-        glRotatef(self.z, 0.0, 0.0, 1.0)
+        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
+        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
+        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
 
         timePoint3=time.perf_counter()
         self.DrawBox()
@@ -223,25 +228,25 @@ class ARVSMain:
         print (fingerState)
 
         if fingerState == "00000":
-            self.x += 0
-            self.y += 0
-            self.z += 0
+            self._RotateX += 0
+            self._RotateY += 0
+            self._RotateZ += 0
         elif fingerState == "01000":
-            self.x += 0.2
-            self.y += 0.4
-            self.z += 0.6
+            self._RotateX += 0.2
+            self._RotateY += 0.4
+            self._RotateZ += 0.6
         elif fingerState == "01100":
-            self.x += 0.4
-            self.y += 0.8
-            self.z += 1.2
+            self._RotateX += 0.4
+            self._RotateY += 0.8
+            self._RotateZ += 1.2
         elif fingerState == "01110":
-            self.x += 1
-            self.y += 2
-            self.z += 3
+            self._RotateX += 1
+            self._RotateY += 2
+            self._RotateZ += 3
         else:
-            self.x += 0.1
-            self.y += 0.2
-            self.z += 0.1
+            self._RotateX += 0.1
+            self._RotateY += 0.2
+            self._RotateZ += 0.1
 
         timePoint2=time.perf_counter()
         print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
@@ -277,15 +282,10 @@ class ARVSMain:
             self.modelMatrix=self.ConstructModelMatrix(rvec, tvec)
             glLoadMatrixf(self.modelMatrix)
 
-
-            #Rotate around the x, y, z axes respectively
-            glRotatef(self.x, 1.0, 0.0, 0.0)
-            glRotatef(self.y, 0.0, 1.0, 0.0)
-            glRotatef(self.z, 0.0, 0.0, 1.0)
-
             self.DrawBox()
             self.bAppearNewMarker = True
 
+        #
         if self.bCreatedArBox and not self.bAppearNewMarker:
             if self.curState == "Initial":
                 glMatrixMode(GL_PROJECTION)
@@ -302,7 +302,14 @@ class ARVSMain:
             #Refresh screen
         glutSwapBuffers()
 
-        '''
+        #GestureControl()
+
+    def GestureControl(self):
+        #Rotate around the x, y, z axes respectively
+        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
+        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
+        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
+
         #====0.02-0.05ms====
         #get gesture #get state
         gestureRecgonizer = GestureRecognizer(self.listHandPoints)
@@ -312,30 +319,148 @@ class ARVSMain:
         #====0.02-0.05ms====
 
         if fingerState == "00000":
-            self.x += 0
-            self.y += 0
-            self.z += 0
+            self._RotateX += 0
+            self._RotateY += 0
+            self._RotateZ += 0
         elif fingerState == "01000":
-            self.x += 0.2
-            self.y += 0.4
-            self.z += 0.6
+            self._RotateX += 0.2
+            self._RotateY += 0.4
+            self._RotateZ += 0.6
         elif fingerState == "01100":
-            self.x += 0.4
-            self.y += 0.8
-            self.z += 1.2
+            self._RotateX += 0.4
+            self._RotateY += 0.8
+            self._RotateZ += 1.2
         elif fingerState == "01110":
-            self.x += 1
-            self.y += 2
-            self.z += 3
+            self._RotateX += 1
+            self._RotateY += 2
+            self._RotateZ += 3
         else:
-            self.x += 0.0
-            self.y += 0.0
-            self.z += 0.0
+            self._RotateX += 0.0
+            self._RotateY += 0.0
+            self._RotateZ += 0.0
 
         timePoint2=time.perf_counter()
         #print ("Draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
-        '''
+    def GestureControl2(self):
 
+        # Rotate around the x, y, z axes respectively
+        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
+        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
+        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
+
+        # ====0.02-0.05ms====
+        # get gesture #get state
+        gestureRecgonizer = GestureRecognizer(self.listHandPoints)
+        strCurFingereState = gestureRecgonizer.GetFingerState()
+        if strCurFingereState != "":
+            print(strCurFingereState)
+        # ====0.02-0.05ms====
+        #state change
+        if strCurFingereState=="00000" or strCurFingereState=="11111":
+            if strCurFingereState=="11111" and self._strLastFingerState=="00000":
+                self._bKeepState=true
+                if self.curState=="Initial":
+                    self.curState ="FrontView"
+                    print("====Initial=FrontView====")
+                elif self.curState=="FrontView":
+                    self.curState = "Move"
+                    print("====FrontView=Move====")
+                elif self.curState=="Move":
+                    self.curState = "Rotate"
+                    print("====Move=Rotate====")
+                elif self.curState=="Rotate":
+                    self.curState="Zoom"
+                    print("====Rotate=Zoom====")
+                elif self.curState=="Zoom":
+                    self.curState = "FrontView"
+                    print("====Zoom=FrontView====")
+            elif strCurFingereState=="11111" and self.curState=="FrontView":
+                if not _bKeepState:
+                    _dRotX=0
+                    _dRotY=90
+                    _dRotZ=0
+            self._strLastFingerState=strCurFingereState
+        else:
+            self._bKeepState = False
+            if self.curState == "Initial":
+                self.curState = "FrontView"
+
+            CS=self.curState
+            if CS == "FrontView":
+                _dZoom = -3;
+
+                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    self._RotateX=0
+                    self._RotateY=0
+                    self._RotateZ=0
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                    self._RotateX = 180
+                    self._RotateY = 0
+                    self._RotateZ = 0
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                    self._RotateX=90
+                    self._RotateY=0
+                    self._RotateZ=0
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    self._RotateX=-90
+                    self._RotateY=0
+                    self._RotateZ=0
+                elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    self._RotateX=0
+                    self._RotateY=90
+                    self._RotateZ=0
+                elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
+                    self._RotateX=0
+                    self._RotateY=-90
+                    self._RotateZ=0
+            elif CS == "Move":
+                dStep = 0.05
+                dDiffX = 0
+                dDiffY = 0
+                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    dDiffX = -dStep
+                    dDiffY = 0
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                    dDiffX = dStep
+                    dDiffY = 0
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                    dDiffX = 0
+                    dDiffY = -dStep
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    dDiffX = 0
+                    dDiffY = dStep
+
+                self._dMoveX+=dDiffX
+                self._dMoveY+=dDiffY
+            elif CS == "Rotate":
+                dStep = 2
+                dDiffX = 0
+                dDiffY = 0
+                dDiffZ = 0
+
+                if CS[0] == "1":
+                    dStep=-dStep
+                if CS[1] == "1":
+                    dDiffX=dStep
+                if CS[2] == "1":
+                    dDiffY=dStep
+                if CS[3] == "1":
+                    dDiffZ=dStep
+                self._RotateX +=dDiffX
+                self._RotateY +=dDiffY
+                self._RotateZ +=dDiffZ
+            elif CS == "Zoom":
+                dStep = 0.1
+                dDiff = 0
+                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    dDiff = -dStep
+                if CS[0]=="1" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    dDiff = dStep
+                self._dZoom+=dDiff
+                if self._dZoom>-1.5:
+                    self._dZoom=-1.5
+                elif self._dZoom<-15:
+                    self._dZoom = -15
 
     # Box 0.1-0.2ms
     def DrawBox(self):
@@ -343,78 +468,78 @@ class ARVSMain:
         glBindTexture(GL_TEXTURE_2D, 0)
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(-1.0, -1.0, 1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(1.0, -1.0, 1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(1.0, 1.0, 1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(-1.0, 1.0, 1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glEnd()
 
         #face2
         glBindTexture(GL_TEXTURE_2D, 1)
         glBegin(GL_QUADS)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(-1.0, -1.0, -1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(1.0, 1.0, -1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(1.0, -1.0, -1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glEnd()
 
         #face3
         glBindTexture(GL_TEXTURE_2D, 2)
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(-1.0, 1.0, 1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(1.0, 1.0, 1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(1.0, 1.0, -1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glEnd()
 
         #face4
         glBindTexture(GL_TEXTURE_2D, 3)
         glBegin(GL_QUADS)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(-1.0, -1.0, -1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(1.0, -1.0, -1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(1.0, -1.0, 1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(-1.0, -1.0, 1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glEnd()
 
         #face5
         glBindTexture(GL_TEXTURE_2D, 4)
         glBegin(GL_QUADS)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(1.0, -1.0, -1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(1.0, 1.0, -1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(1.0, 1.0, 1.0)
+        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(1.0, -1.0, 1.0)
+        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glEnd()
 
         #face6
         glBindTexture(GL_TEXTURE_2D, 5)
         glBegin(GL_QUADS)
         glTexCoord2f(0.0, 0.0)
-        glVertex3f(-1.0, -1.0, -1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
         glTexCoord2f(1.0, 0.0)
-        glVertex3f(-1.0, -1.0, 1.0)
+        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
         glTexCoord2f(1.0, 1.0)
-        glVertex3f(-1.0, 1.0, 1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
         glTexCoord2f(0.0, 1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
+        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glEnd()
 
 
