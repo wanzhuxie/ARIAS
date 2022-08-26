@@ -14,7 +14,8 @@ from GeneralFunctions import *
 
 
 class MarkerRecognizer:
-    def __init__(self):
+    def __init__(self,Test=False):
+        self.Test=Test
         self.img=None
         self.iCellSize = 10
         self.iCellCount = 5
@@ -26,10 +27,13 @@ class MarkerRecognizer:
                               [self.iMarkerSize, self.iMarkerSize],
                               [self.iMarkerSize, 0]])
 
+    #Canny
     def PreProcess(self,img):
-        #img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        preResult=cv2.Canny(img, 50, 100)
+        img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        img_gray=cv2.blur(img_gray,(3,3))
+        preResult=cv2.Canny(img_gray, 50, 100)
         return preResult
+    #adaptiveThreshold
     def PreProcess2(self,img):
         img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
         #img_gray=cv2.Canny(img_gray, 50, 100)
@@ -44,26 +48,22 @@ class MarkerRecognizer:
 
     def DetectPossibleMarker(self,img):
         preResult=self.PreProcess(img)
-        cv2.imshow("preResult",preResult)
-
+        if self.Test:
+            cv2.imshow("preResult",preResult)
 
         listPossibleMarkers=[]
         contours, hierarchy = cv2.findContours(preResult,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
         for i in range(len(contours)):
             #print(contours[i])
-            length=cv2.arcLength(contours[i], False)
-            area=cv2.contourArea(contours[i])
+            #length=cv2.arcLength(contours[i], False)
+            #area=cv2.contourArea(contours[i])
             #print("%.2f"%length , "," , "%.2f"%area)
             if len(contours[i])<100:
                 continue
 
-            #cv2.drawContours(img, contours, i, (255, 0, 0), 2)
+            #corner count is 4 ?
             epsilon = 0.02 * cv2.arcLength(contours[i], True)
             approx=cv2.approxPolyDP(contours[i], epsilon , True )
-
-            #print(len(approx))
-            #print(cv2.isContourConvex(approx))
-
             if len(approx) != 4:
                 continue
             if not cv2.isContourConvex(approx):
@@ -83,33 +83,58 @@ class MarkerRecognizer:
             dMin=min(dLen0,dLen1,dLen2,dLen3)
             dMax=max(dLen0,dLen1,dLen2,dLen3)
             #print(dMin,dMax)
-
             if dMax>dMin*4 :
                 continue
 
             #print("=========================")
-            #print(np.array(approx[1]-approx[0]))
-            #print(np.array(approx[2]-approx[0]))
-            dAngle_01_02=GetAngle(np.array(approx[1]-approx[0]) , np.array(approx[2]-approx[0]))
-            #print ("angle_01-02",dAngle_01_02)
+            crossValue_01_02=np.cross(np.array(approx[1]-approx[0]) , np.array(approx[2]-approx[0]))
+            print ("angle_01-02",crossValue_01_02)
+            if crossValue_01_02<0:
+                print("===ori===")
+                print(approx)
+                temp=np.copy(approx[3])
+                approx[3]=approx[1]
+                approx[1]=temp
+                print("===new===")
+                print(approx)
 
-            cv2.polylines(img, [approx], True, (0, 0, 255), 2)
-            listPossibleMarkers.append(approx)
+            #exist repeat marker?
+            bExist=False
+            for j in range (len(listPossibleMarkers)):
+                dLen00 = np.sqrt(np.sum(np.square(approx[0] - listPossibleMarkers[j][0])))
+                dLen11 = np.sqrt(np.sum(np.square(approx[1] - listPossibleMarkers[j][1])))
+                dLen22 = np.sqrt(np.sum(np.square(approx[2] - listPossibleMarkers[j][2])))
+                dLen33 = np.sqrt(np.sum(np.square(approx[3] - listPossibleMarkers[j][3])))
+                dDisThrehold=5
+                if dLen00<dDisThrehold and dLen11<dDisThrehold and dLen22<dDisThrehold and dLen33<dDisThrehold:
+                    bExist=True
+                    break
+            if not bExist:
+                listPossibleMarkers.append(approx)
 
-        cv2.imshow("Background", img)
         return listPossibleMarkers
 
 
 
     def Recognize(self, img0):
         listPossibleMarkers=self.DetectPossibleMarker(img0)
+
+        #show Possible Markers
+        if self.Test:
+            imgPossible=img0.copy()
+            for i in range (len(listPossibleMarkers)):
+                cv2.polylines(imgPossible, [listPossibleMarkers[i]], True, (0, 0, 255), 2)
+            cv2.imshow("Possible Markers", imgPossible)
+
+
         img_gray=cv2.cvtColor(img0,cv2.COLOR_BGR2GRAY)
 
-        #cellPixelCount 方块标准像素数
+        #cellPixelCount 方块标准像素数100
         cellPixelCount=self.iCellSize**2
         #frameSide_Pixel_Threshold  cellPixelCount*7*(4/3) 边框黑色，像素数最多总数700的四分之一
         side_Pixel_Threshold=cellPixelCount*self.iCellCountWithFrame/4
-        #
+
+        # final markers
         listRealMarkers = []
         for i in range (len(listPossibleMarkers)):
             #print("===================")
@@ -127,13 +152,14 @@ class MarkerRecognizer:
             _,marker_threshold=cv2.threshold(image_marker, 180, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
             #cv2.imshow("marker_threshold",marker_threshold)
             kernel = np.ones((3, 3), np.uint8)
-            marker_threshold=cv2.erode(marker_threshold,kernel)
-            #cv2.imshow("erode",marker_threshold)
-            # is it real marker? check cell pixel
-            #h,w,c = marker_threshold.shape
-            #print("total pixel:",w*h)
 
-            #4 side frames
+            # erode to shrink white cell
+            marker_threshold=cv2.erode(marker_threshold,kernel)
+            #if self.Test:
+                #cv2.imshow("erode",marker_threshold)
+
+            # is it real marker? check cell pixel
+            # side frames
             sideLen=marker_threshold.shape[1] // self.iCellCountWithFrame
             upper_frame=marker_threshold[:, :sideLen]
             Lower_frame=marker_threshold[:, sideLen*(self.iCellCountWithFrame-1):]
@@ -145,16 +171,14 @@ class MarkerRecognizer:
             right_PixelCount=cv2.countNonZero(right_frame)
             #print("frame side pixel count:",upper_PixelCount,lower_PixelCount,left__PixelCount,right_PixelCount)
 
-            # note: the algorithms are diff when in PreProcess(Canny,adaptiveThreshold)!!!!!!!!!!!!!!!!!!!!!!
+            # note: the algorithms are diff when PreProcess changed(Canny,adaptiveThreshold)!!!!!!!!!!!!!!!!!!!!!!
             if upper_PixelCount>side_Pixel_Threshold \
             or lower_PixelCount>side_Pixel_Threshold \
             or left__PixelCount>side_Pixel_Threshold \
             or right_PixelCount>side_Pixel_Threshold:
                 continue
 
-            #20220821 continue later!!!!!!!!!!!!!!!
             #get the marker's information
-
             markerInfo=np.zeros([self.iCellCount,self.iCellCount])
             for x in range (0,self.iCellCount):
                 for y in range (0,self.iCellCount):
@@ -163,12 +187,18 @@ class MarkerRecognizer:
                                               int((x+1)*self.iCellSize):\
                                               int((x+2)*self.iCellSize)]
                     NonZeroCount = cv2.countNonZero(cell_img)
-                    print((x+1),(y+1),"cell_PixelCount",NonZeroCount)
                     if NonZeroCount>cellPixelCount/2:
                         markerInfo[x][y]=1
-            print ("===============marker info===============")
-            print (markerInfo)
-            cv2.imshow("marker",marker_threshold)
+
+                    #if self.Test:
+                        #print((x+1),(y+1),"cell_PixelCount",NonZeroCount)
+
+            #print ("===============marker info===============")
+            #print (markerInfo)
+
+            if self.Test:
+                markerName="finalMarker-"+str(i)
+                cv2.imshow(markerName,marker_threshold)
 
             corners=listPossibleMarkers[i]
             ##sub-pixel
@@ -180,20 +210,21 @@ class MarkerRecognizer:
         return listRealMarkers
 
 
-if __name__ == '__main__0':
-    for x in range(1, 10):
-        for y in range(1, 10):
-            #cell_img = marker_threshold[y / self.iCellCountWithFrame:(y + 1) / self.iCellCountWithFrame,x / self.iCellCountWithFrame:(x + 1) / self.iCellCountWithFrame]
-            print(y / 10 , (y + 1)/10 , x / 10 , (x + 1)/10)
-
 
 if __name__ == '__main__':
     cap0 = cv2.VideoCapture(0)
-    MR=MarkerRecognizer()
+    MR=MarkerRecognizer(True)
     while True:
         _,img=cap0.read()
-        img=MR.Recognize(img)
-
+        listRealMarkers=MR.Recognize(img)
+        markerCount=len(listRealMarkers)
+        if markerCount>0:
+            print("===============markerCount===============")
+            print("Marker count:",markerCount)
+        for i in range (markerCount):
+            cv2.polylines(img, [listRealMarkers[i]], True, (0, 0, 255), 2)
+            print(listRealMarkers[i])
+        cv2.imshow("final markers", img)
 
         #cv2.imshow("Background", img)
         cv2.waitKey(100)
