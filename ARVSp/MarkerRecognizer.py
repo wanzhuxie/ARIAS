@@ -30,8 +30,8 @@ class MarkerRecognizer:
     #Canny
     def PreProcess(self,img):
         img_gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        img_gray=cv2.blur(img_gray,(3,3))
-        preResult=cv2.Canny(img_gray, 50, 100)
+        #img_gray=cv2.blur(img_gray,(3,3))
+        preResult=cv2.Canny(img_gray, 80, 160)
         return preResult
     #adaptiveThreshold
     def PreProcess2(self,img):
@@ -62,7 +62,7 @@ class MarkerRecognizer:
                 continue
 
             #corner count is 4 ?
-            epsilon = 0.02 * cv2.arcLength(contours[i], True)
+            epsilon = 0.1 * cv2.arcLength(contours[i], True)
             approx=cv2.approxPolyDP(contours[i], epsilon , True )
             if len(approx) != 4:
                 continue
@@ -90,13 +90,9 @@ class MarkerRecognizer:
             crossValue_01_02=np.cross(np.array(approx[1]-approx[0]) , np.array(approx[2]-approx[0]))
             print ("angle_01-02",crossValue_01_02)
             if crossValue_01_02<0:
-                print("===ori===")
-                print(approx)
                 temp=np.copy(approx[3])
                 approx[3]=approx[1]
                 approx[1]=temp
-                print("===new===")
-                print(approx)
 
             #exist repeat marker?
             bExist=False
@@ -201,9 +197,6 @@ class MarkerRecognizer:
                 cv2.imshow(markerName,marker_threshold)
 
             corners=listPossibleMarkers[i]
-            ##sub-pixel
-            #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.1)
-            #corners = cv2.cornerSubPix(img_gray, corners, (5, 5), (-1, -1), criteria)
             #collect final markers
             listRealMarkers.append(corners)
 

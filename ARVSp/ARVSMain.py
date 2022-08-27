@@ -264,7 +264,12 @@ class ARVSMain:
         listMarkers=[]
         if self.img0 is not None:
             self.draw_background(self.img0)
+
+            #markerRecognizer1 = time.perf_counter()
+            #3-4ms
             listMarkers=self.markerRecognizer.Recognize(self.img0)
+            #markerRecognizer2=time.perf_counter()
+            #print ("markerRecognizer:", "%.2f" % ((markerRecognizer2-markerRecognizer1)*1000), "ms")
 
         ##15-19ms
         self.LoadTexture()
@@ -317,43 +322,6 @@ class ARVSMain:
         glutSwapBuffers()
 
 
-    def GestureControl2(self):
-        #Rotate around the x, y, z axes respectively
-        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
-        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
-        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
-
-        #====0.02-0.05ms====
-        #get gesture #get state
-        gestureRecgonizer = GestureRecognizer(self.listHandPoints)
-        fingerState=gestureRecgonizer.GetFingerState()
-        if fingerState!="":
-            print (fingerState)
-        #====0.02-0.05ms====
-
-        if fingerState == "00000":
-            self._RotateX += 0
-            self._RotateY += 0
-            self._RotateZ += 0
-        elif fingerState == "01000":
-            self._RotateX += 0.2
-            self._RotateY += 0.4
-            self._RotateZ += 0.6
-        elif fingerState == "01100":
-            self._RotateX += 0.4
-            self._RotateY += 0.8
-            self._RotateZ += 1.2
-        elif fingerState == "01110":
-            self._RotateX += 1
-            self._RotateY += 2
-            self._RotateZ += 3
-        else:
-            self._RotateX += 0.0
-            self._RotateY += 0.0
-            self._RotateZ += 0.0
-
-        timePoint2=time.perf_counter()
-        #print ("Draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
     def GestureControl(self):
         # Rotate around the x, y, z axes respectively
         #glRotatef(self._RotateX, 1.0, 0.0, 0.0)
@@ -389,9 +357,9 @@ class ARVSMain:
                     print("====Zoom=FrontView====")
             elif strCurFingereState=="11111" and self.curState=="FrontView":
                 if not self._bKeepState:
-                    _dRotX=0
-                    _dRotY=90
-                    _dRotZ=0
+                    self._dRotX=0
+                    self._dRotY=90
+                    self._dRotZ=0
             self._strLastFingerState=strCurFingereState
         else:
             self._bKeepState = False
@@ -427,7 +395,7 @@ class ARVSMain:
                     self._RotateY=-90
                     self._RotateZ=0
             elif self.curState == "Move":
-                dStep = 0.05
+                dStep = 0.01
                 dDiffX = 0
                 dDiffY = 0
                 if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
@@ -570,6 +538,12 @@ class ARVSMain:
         success4, img4 = self.cap4.read()
         success5, img5 = self.cap5.read()
         success6, img6 = self.cap6.read()
+        #cv2.imshow("1",img1)
+        #cv2.imshow("2",img2)
+        #cv2.imshow("3",img3)
+        #cv2.imshow("4",img4)
+        #cv2.imshow("5",img5)
+        #cv2.imshow("6",img6)
         img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGBA)
         img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGBA)
         img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGBA)
