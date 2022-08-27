@@ -254,6 +254,12 @@ class ARVSMain:
     def Draw(self):
         timePoint1=time.perf_counter()
 
+        #not work...
+        self.GestureControl()
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        self.bAppearNewMarker=False
         #background
         listMarkers=[]
         if self.img0 is not None:
@@ -263,10 +269,10 @@ class ARVSMain:
         ##15-19ms
         self.LoadTexture()
 
-        glLoadIdentity()
+        #glLoadIdentity()
 
         #Translate along z-axis
-        glTranslate(0.0, 0.0, -5.0)
+        #glTranslate(0.0, 0.0, -5.0)
 
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -283,7 +289,15 @@ class ARVSMain:
             glLoadMatrixf(self.modelMatrix)
 
             self.DrawBox()
+            self.curState = "Initial"
             self.bAppearNewMarker = True
+            self.bCreatedArBox=True
+
+        glLoadIdentity()
+        glTranslatef(self._dMoveX, self._dMoveY, self._dZoom)
+        glRotatef(self._RotateX, 1, 0, 0)
+        glRotatef(self._RotateY, 0, 1, 0)
+        glRotatef(self._RotateZ, 0, 0, 1)
 
         #
         if self.bCreatedArBox and not self.bAppearNewMarker:
@@ -294,17 +308,16 @@ class ARVSMain:
 
                 glMatrixMode(GL_MODELVIEW)
                 glLoadIdentity()
-                glEnable(GL_DEPTH_TEST)
-                glShadeModel(GL_SMOOTH)
+                #glEnable(GL_DEPTH_TEST)
+                #glShadeModel(GL_SMOOTH)
                 glLoadMatrixf(self.modelMatrix)
-            DrawARBox()
+            self.DrawBox()
 
             #Refresh screen
         glutSwapBuffers()
 
-        #GestureControl()
 
-    def GestureControl(self):
+    def GestureControl2(self):
         #Rotate around the x, y, z axes respectively
         glRotatef(self._RotateX, 1.0, 0.0, 0.0)
         glRotatef(self._RotateY, 0.0, 1.0, 0.0)
@@ -341,24 +354,24 @@ class ARVSMain:
 
         timePoint2=time.perf_counter()
         #print ("Draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
-    def GestureControl2(self):
-
+    def GestureControl(self):
         # Rotate around the x, y, z axes respectively
-        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
-        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
-        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
+        #glRotatef(self._RotateX, 1.0, 0.0, 0.0)
+        #glRotatef(self._RotateY, 0.0, 1.0, 0.0)
+        #glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
 
         # ====0.02-0.05ms====
         # get gesture #get state
         gestureRecgonizer = GestureRecognizer(self.listHandPoints)
         strCurFingereState = gestureRecgonizer.GetFingerState()
-        if strCurFingereState != "":
-            print(strCurFingereState)
+        if strCurFingereState == "":
+            return
+        print(strCurFingereState)
         # ====0.02-0.05ms====
         #state change
         if strCurFingereState=="00000" or strCurFingereState=="11111":
             if strCurFingereState=="11111" and self._strLastFingerState=="00000":
-                self._bKeepState=true
+                self._bKeepState=True
                 if self.curState=="Initial":
                     self.curState ="FrontView"
                     print("====Initial=FrontView====")
@@ -375,7 +388,7 @@ class ARVSMain:
                     self.curState = "FrontView"
                     print("====Zoom=FrontView====")
             elif strCurFingereState=="11111" and self.curState=="FrontView":
-                if not _bKeepState:
+                if not self._bKeepState:
                     _dRotX=0
                     _dRotY=90
                     _dRotZ=0
@@ -385,9 +398,9 @@ class ARVSMain:
             if self.curState == "Initial":
                 self.curState = "FrontView"
 
-            CS=self.curState
-            if CS == "FrontView":
-                _dZoom = -3;
+            CS=strCurFingereState
+            if self.curState == "FrontView":
+                self._dZoom = -3;
 
                 if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
                     self._RotateX=0
@@ -413,7 +426,7 @@ class ARVSMain:
                     self._RotateX=0
                     self._RotateY=-90
                     self._RotateZ=0
-            elif CS == "Move":
+            elif self.curState == "Move":
                 dStep = 0.05
                 dDiffX = 0
                 dDiffY = 0
@@ -432,7 +445,7 @@ class ARVSMain:
 
                 self._dMoveX+=dDiffX
                 self._dMoveY+=dDiffY
-            elif CS == "Rotate":
+            elif self.curState == "Rotate":
                 dStep = 2
                 dDiffX = 0
                 dDiffY = 0
@@ -449,7 +462,7 @@ class ARVSMain:
                 self._RotateX +=dDiffX
                 self._RotateY +=dDiffY
                 self._RotateZ +=dDiffZ
-            elif CS == "Zoom":
+            elif self.curState == "Zoom":
                 dStep = 0.1
                 dDiff = 0
                 if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
