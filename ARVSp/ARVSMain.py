@@ -17,7 +17,7 @@ from GestureRecognizer import *
 from MarkerRecognizer import *
 import threading
 import numpy as np
-import FaceBlanking
+from FaceBlanking import *
 
 class ARVSMain:
     def __init__(self):
@@ -76,6 +76,7 @@ class ARVSMain:
 
         self.markerRecognizer=MarkerRecognizer()
 
+        self.FaceBlankingBox =FaceBlankingBox()
     # InitGL
     def InitGL(self, width, height):
         glutInit()
@@ -302,9 +303,9 @@ class ARVSMain:
 
         glLoadIdentity()
         glTranslatef(self._dMoveX, self._dMoveY, self._dZoom)
-        glRotatef(self._RotateX, 1, 0, 0)
-        glRotatef(self._RotateY, 0, 1, 0)
         glRotatef(self._RotateZ, 0, 0, 1)
+        glRotatef(self._RotateY, 0, 1, 0)
+        glRotatef(self._RotateX, 1, 0, 0)
 
         #
         if self.bCreatedArBox and not self.bAppearNewMarker:
@@ -320,9 +321,11 @@ class ARVSMain:
                 glLoadMatrixf(self.modelMatrix)
             self.DrawBox()
 
-            #Refresh screen
+        #Refresh screen
         glutSwapBuffers()
 
+        timePoint2=time.perf_counter()
+        print ("draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
 
     def GestureControl(self):
         # Rotate around the x, y, z axes respectively
@@ -359,9 +362,9 @@ class ARVSMain:
                     print("====Zoom=FrontView====")
             elif strCurFingereState=="11111" and self.curState=="FrontView":
                 if not self._bKeepState:
-                    self._dRotX=90
-                    self._dRotY=0
-                    self._dRotZ=0
+                    self._RotateX=90
+                    self._RotateY=0
+                    self._RotateZ=0
             self._strLastFingerState=strCurFingereState
         else:
             self._bKeepState = False
@@ -446,84 +449,6 @@ class ARVSMain:
                     self._dZoom = -15
 
     # Box 0.1-0.2ms
-    def DrawBox0(self):
-        #face1
-        glBindTexture(GL_TEXTURE_2D, 0)
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glEnd()
-
-        #face2
-        glBindTexture(GL_TEXTURE_2D, 1)
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glEnd()
-
-        #face3
-        glBindTexture(GL_TEXTURE_2D, 2)
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glEnd()
-
-        #face4
-        glBindTexture(GL_TEXTURE_2D, 3)
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glEnd()
-
-        #face5
-        glBindTexture(GL_TEXTURE_2D, 4)
-        glBegin(GL_QUADS)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glEnd()
-
-        #face6
-        glBindTexture(GL_TEXTURE_2D, 5)
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, -self.mappingWidth)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(-self.mappingWidth, -self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, self.mappingWidth)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
-        glEnd()
     def DrawBox(self):
         halfLen=self.mappingWidth
 
@@ -581,7 +506,7 @@ class ARVSMain:
         glEnd()
 
     #LoadTexture 20-25ms [the Overall CPU occupancy is  65%]
-    def LoadTexture(self):
+    def LoadTexture0(self):
         if self.cap1.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount1:    self.cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
         if self.cap2.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount2:    self.cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
         if self.cap3.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount3:    self.cap3.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -627,66 +552,41 @@ class ARVSMain:
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-    #LoadTexture(multi-threat) 15-19ms [the Overall CPU occupancy is 100%]
-    def LoadTexture2(self):
-        thread_list = []
-        t1 = threading.Thread(target=self.CreateOneTexture,args=( 1, self.cap1, self.frameCount1))
-        t2 = threading.Thread(target=self.CreateOneTexture,args=( 2, self.cap2, self.frameCount2))
-        t3 = threading.Thread(target=self.CreateOneTexture,args=( 3, self.cap3, self.frameCount3))
-        t4 = threading.Thread(target=self.CreateOneTexture,args=( 4, self.cap4, self.frameCount4))
-        t5 = threading.Thread(target=self.CreateOneTexture,args=( 5, self.cap5, self.frameCount5))
-        t6 = threading.Thread(target=self.CreateOneTexture,args=( 6, self.cap6, self.frameCount6))
-        thread_list.append(t1)
-        thread_list.append(t2)
-        thread_list.append(t3)
-        thread_list.append(t4)
-        thread_list.append(t5)
-        thread_list.append(t6)
+    def LoadTexture(self):
+        listHideFaces=[]
+        if self.curState!="Initial":
+            self.FaceBlankingBox.SetRotation(self._RotateX,self._RotateY,self._RotateZ)
+            listHideFaces=self.FaceBlankingBox.GetHideFaces()
 
-        for t in thread_list:
-            #t.setDaemon(True)  # daemon thread will not be interrupted by the main thread ends
-            t.start()
-        for t in thread_list:
-            t.join() # the main thread wait all sub  threat completed
-
-        listFrame=[]
-        listFrame.append(self.img1)
-        listFrame.append(self.img2)
-        listFrame.append(self.img3)
-        listFrame.append(self.img4)
-        listFrame.append(self.img5)
-        listFrame.append(self.img6)
-
-        for i in range(6):
-            h1, w1, c1 = listFrame[i].shape
+        self.CreateOneTexture(listHideFaces,0,self.cap1,self.frameCount1)
+        self.CreateOneTexture(listHideFaces,1,self.cap2,self.frameCount2)
+        self.CreateOneTexture(listHideFaces,2,self.cap3,self.frameCount3)
+        self.CreateOneTexture(listHideFaces,3,self.cap4,self.frameCount4)
+        self.CreateOneTexture(listHideFaces,4,self.cap5,self.frameCount5)
+        self.CreateOneTexture(listHideFaces,5,self.cap6,self.frameCount6)
+    def CreateOneTexture(self,listHideFaces,i,cap,frameCount):
+        if i in listHideFaces:
             glGenTextures(2)
             glBindTexture(GL_TEXTURE_2D, i)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w1, h1, 0, GL_RGBA, GL_UNSIGNED_BYTE, listFrame[i].data)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP)
-            #glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_REPEAT)
-            #glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-    #Use with LoadTexture(multi-threat)
-    def CreateOneTexture(self,i,cap,frameCount):
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            return None
+
+        if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         success, img = cap.read()
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-        if i == 1:
-            self.img1=img
-        elif i==2:
-            self.img2=img
-        elif i==3:
-            self.img3=img
-        elif i==4:
-            self.img4=img
-        elif i==5:
-            self.img5=img
-        elif i==6:
-            self.img6=img
+        img=cv2.flip(img,0)
+
+        h1, w1, c1 = img.shape
+        glGenTextures(2)
+        glBindTexture(GL_TEXTURE_2D, i)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w1, h1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.data)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+
 
     #MainLoop
     def MainLoop(self):
