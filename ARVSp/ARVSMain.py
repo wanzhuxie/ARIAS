@@ -17,6 +17,7 @@ from GestureRecognizer import *
 from MarkerRecognizer import *
 import threading
 import numpy as np
+import FaceBlanking
 
 class ARVSMain:
     def __init__(self):
@@ -250,6 +251,7 @@ class ARVSMain:
 
         timePoint2=time.perf_counter()
         print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+
     #draw main(using GetHandPoints through multi-threat)
     def Draw(self):
         timePoint1=time.perf_counter()
@@ -357,8 +359,8 @@ class ARVSMain:
                     print("====Zoom=FrontView====")
             elif strCurFingereState=="11111" and self.curState=="FrontView":
                 if not self._bKeepState:
-                    self._dRotX=0
-                    self._dRotY=90
+                    self._dRotX=90
+                    self._dRotY=0
                     self._dRotZ=0
             self._strLastFingerState=strCurFingereState
         else:
@@ -375,24 +377,24 @@ class ARVSMain:
                     self._RotateY=0
                     self._RotateZ=0
                 elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
-                    self._RotateX = 180
-                    self._RotateY = 0
+                    self._RotateX = 0
+                    self._RotateY = 180
                     self._RotateZ = 0
                 elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
-                    self._RotateX=90
-                    self._RotateY=0
-                    self._RotateZ=0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
-                    self._RotateX=-90
-                    self._RotateY=0
-                    self._RotateZ=0
-                elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
                     self._RotateX=0
                     self._RotateY=90
                     self._RotateZ=0
-                elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
+                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
                     self._RotateX=0
                     self._RotateY=-90
+                    self._RotateZ=0
+                elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    self._RotateX=90
+                    self._RotateY=0
+                    self._RotateZ=0
+                elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
+                    self._RotateX=-90
+                    self._RotateY=0
                     self._RotateZ=0
             elif self.curState == "Move":
                 dStep = 0.01
@@ -444,7 +446,7 @@ class ARVSMain:
                     self._dZoom = -15
 
     # Box 0.1-0.2ms
-    def DrawBox(self):
+    def DrawBox0(self):
         #face1
         glBindTexture(GL_TEXTURE_2D, 0)
         glBegin(GL_QUADS)
@@ -522,7 +524,61 @@ class ARVSMain:
         glTexCoord2f(0.0, 1.0)
         glVertex3f(-self.mappingWidth, self.mappingWidth, -self.mappingWidth)
         glEnd()
+    def DrawBox(self):
+        halfLen=self.mappingWidth
 
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(-halfLen,halfLen,halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(-halfLen,-halfLen,halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(halfLen,-halfLen,halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(halfLen,halfLen,halfLen)
+        glEnd()
+
+        #face2
+        glBindTexture(GL_TEXTURE_2D, 1)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(halfLen,halfLen,-halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(-halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(-halfLen,halfLen,-halfLen)
+        glEnd()
+
+        #face3
+        glBindTexture(GL_TEXTURE_2D, 2)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(-halfLen,halfLen,-halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(-halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(-halfLen,-halfLen,halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(-halfLen,halfLen,halfLen)
+        glEnd()
+
+        #face4
+        glBindTexture(GL_TEXTURE_2D, 3)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(halfLen,halfLen,halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(halfLen,-halfLen,halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(halfLen,halfLen,-halfLen)
+        glEnd()
+
+        #face5
+        glBindTexture(GL_TEXTURE_2D, 4)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(-halfLen,halfLen,-halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(-halfLen,halfLen,halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(halfLen,halfLen,halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(halfLen,halfLen,-halfLen)
+        glEnd()
+
+        #face6
+        glBindTexture(GL_TEXTURE_2D, 5)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0.0, 1.0);        glVertex3f(-halfLen,-halfLen,halfLen)
+        glTexCoord2f(0.0, 0.0);        glVertex3f(-halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 0.0);        glVertex3f(halfLen,-halfLen,-halfLen)
+        glTexCoord2f(1.0, 1.0);        glVertex3f(halfLen,-halfLen,halfLen)
+        glEnd()
 
     #LoadTexture 20-25ms [the Overall CPU occupancy is  65%]
     def LoadTexture(self):
@@ -550,6 +606,13 @@ class ARVSMain:
         img4 = cv2.cvtColor(img4, cv2.COLOR_BGR2RGBA)
         img5 = cv2.cvtColor(img5, cv2.COLOR_BGR2RGBA)
         img6 = cv2.cvtColor(img6, cv2.COLOR_BGR2RGBA)
+        img1=cv2.flip(img1,0)
+        img2=cv2.flip(img2,0)
+        img3=cv2.flip(img3,0)
+        img4=cv2.flip(img4,0)
+        img5=cv2.flip(img5,0)
+        img6=cv2.flip(img6,0)
+
         list_img=[img1,img2,img3,img4,img5,img6]
         for i in range(6):
             img = list_img[i]
