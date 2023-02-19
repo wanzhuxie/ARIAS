@@ -24,6 +24,7 @@ class Point3D:
         self.Y=iY
         self.Z=iZ
 
+
 if __name__ == '__main__':
     print((np.cross([1,1],[1,0])))
     print((np.cross([1,1],[1,0])))

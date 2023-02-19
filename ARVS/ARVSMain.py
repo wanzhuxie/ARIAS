@@ -116,6 +116,50 @@ class ARVSMain:
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         bg_img = cv2.flip(img, 0)
+
+        #operation tips
+        strTips="Current state: "
+        if self.curState=="Initial":
+            strTips = strTips + "Initial"
+            strTips = strTips +"\n  Show your hand to the state [Fronting]."
+        elif self.curState=="FrontView":
+            strTips = strTips + "Fronting"
+            strTips = strTips +"\n  00000 11111 to the state [Moving]."
+            strTips = strTips +"\n  01000 to show the video 1"
+            strTips = strTips +"\n  01100 to show the video 2"
+            strTips = strTips +"\n  01000 to show the video 3"
+            strTips = strTips +"\n  01000 to show the video 4"
+            strTips = strTips +"\n  01000 to show the video 5"
+            strTips = strTips +"\n  10001 to show the video 6"
+        elif self.curState=="Move":
+            strTips = strTips + "Moving"
+            strTips = strTips +"\n  00000 11111 to the state [Rotating]."
+            strTips = strTips +"\n  01000 to move left"
+            strTips = strTips +"\n  01100 to move right"
+            strTips = strTips +"\n  01110 to move up"
+            strTips = strTips +"\n  01111 to move down"
+        elif self.curState == "Rotate":
+            strTips = strTips + "Rotating"
+            strTips = strTips + "\n  00000 11111 to the state [Zooming]."
+            strTips = strTips + "\n  01000 rotate about X axis"
+            strTips = strTips + "\n  00100 rotate about Y axis"
+            strTips = strTips + "\n  00010 rotate about Z axis"
+            strTips = strTips + "\n  10000 reverse rotation"
+            strTips = strTips + "\n  Signals can be combined"
+        elif self.curState=="Zoom":
+            strTips = strTips + "Zooming"
+            strTips = strTips +"\n  00000 11111 to the state [Fronting]."
+            strTips = strTips +"\n  01000 to zooming in"
+            strTips = strTips +"\n  01100 to zooming out"
+
+        imgHight=img.shape[0]
+        #cv2.putText(bg_img,strTips,(20,imgHight-20),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,0,0),1,None,True)
+        y0=imgHight-20
+        dy=15
+        for i, txt in enumerate(strTips.split("\n")):
+            y=imgHight-20-i*dy
+            cv2.putText(bg_img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(255,0,0),1,None,True)
+
         bg_img = Image.fromarray(bg_img)
         ix = bg_img.size[0]
         iy = bg_img.size[1]
@@ -191,67 +235,6 @@ class ARVSMain:
             cv2.waitKey(20)
             #timePoint2=time.perf_counter()
             #print ("GetHandPoints:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
-
-    # draw main
-    def Draw2(self):
-        timePoint1=time.perf_counter()
-        #Get hand points
-        listPoints,img = self.handPointsAsker.GetHandPoints()
-
-
-        self.draw_background(img)
-
-        self.LoadTexture()
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        glLoadIdentity()
-
-        #Translate along z-axis
-        glTranslate(0.0, 0.0, -5.0)
-
-        #Rotate around the x, y, z axes respectively
-        glRotatef(self._RotateX, 1.0, 0.0, 0.0)
-        glRotatef(self._RotateY, 0.0, 1.0, 0.0)
-        glRotatef(self._RotateZ, 0.0, 0.0, 1.0)
-
-        timePoint3=time.perf_counter()
-        self.DrawBox()
-        timePoint4=time.perf_counter()
-        #print ((timePoint4-timePoint3)*1000)
-
-        #Refresh screen
-        glutSwapBuffers()
-
-        #get gesture #get state
-        gestureRecgonizer = GestureRecognizer(listPoints)
-        fingerState=""
-        fingerState=gestureRecgonizer.GetFingerState()
-        print (fingerState)
-
-        if fingerState == "00000":
-            self._RotateX += 0
-            self._RotateY += 0
-            self._RotateZ += 0
-        elif fingerState == "01000":
-            self._RotateX += 0.2
-            self._RotateY += 0.4
-            self._RotateZ += 0.6
-        elif fingerState == "01100":
-            self._RotateX += 0.4
-            self._RotateY += 0.8
-            self._RotateZ += 1.2
-        elif fingerState == "01110":
-            self._RotateX += 1
-            self._RotateY += 2
-            self._RotateZ += 3
-        else:
-            self._RotateX += 0.1
-            self._RotateY += 0.2
-            self._RotateZ += 0.1
-
-        timePoint2=time.perf_counter()
-        print ("LoadTexture:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
 
     #draw main(using GetHandPoints through multi-threat)
     def Draw(self):
