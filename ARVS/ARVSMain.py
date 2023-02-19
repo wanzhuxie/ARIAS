@@ -505,53 +505,7 @@ class ARVSMain:
         glTexCoord2f(1.0, 1.0);        glVertex3f(halfLen,-halfLen,halfLen)
         glEnd()
 
-    #LoadTexture 20-25ms [the Overall CPU occupancy is  65%]
-    def LoadTexture0(self):
-        if self.cap1.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount1:    self.cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        if self.cap2.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount2:    self.cap2.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        if self.cap3.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount3:    self.cap3.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        if self.cap4.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount4:    self.cap4.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        if self.cap5.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount5:    self.cap5.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        if self.cap6.get(cv2.CAP_PROP_POS_FRAMES) == self.frameCount6:    self.cap6.set(cv2.CAP_PROP_POS_FRAMES, 0)
-        success1, img1 = self.cap1.read()
-        success2, img2 = self.cap2.read()
-        success3, img3 = self.cap3.read()
-        success4, img4 = self.cap4.read()
-        success5, img5 = self.cap5.read()
-        success6, img6 = self.cap6.read()
-        #cv2.imshow("1",img1)
-        #cv2.imshow("2",img2)
-        #cv2.imshow("3",img3)
-        #cv2.imshow("4",img4)
-        #cv2.imshow("5",img5)
-        #cv2.imshow("6",img6)
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGBA)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGBA)
-        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGBA)
-        img4 = cv2.cvtColor(img4, cv2.COLOR_BGR2RGBA)
-        img5 = cv2.cvtColor(img5, cv2.COLOR_BGR2RGBA)
-        img6 = cv2.cvtColor(img6, cv2.COLOR_BGR2RGBA)
-        img1=cv2.flip(img1,0)
-        img2=cv2.flip(img2,0)
-        img3=cv2.flip(img3,0)
-        img4=cv2.flip(img4,0)
-        img5=cv2.flip(img5,0)
-        img6=cv2.flip(img6,0)
-
-        list_img=[img1,img2,img3,img4,img5,img6]
-        for i in range(6):
-            img = list_img[i]
-            h1, w1, c1 = img.shape
-            glGenTextures(2)
-            glBindTexture(GL_TEXTURE_2D, i)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w1, h1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.data)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+    #LoadTexture
     def LoadTexture(self):
         listHideFaces=[]
         if self.curState!="Initial":
