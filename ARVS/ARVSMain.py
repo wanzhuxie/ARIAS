@@ -61,12 +61,12 @@ class ARVSMain:
         self._dMoveX =0
         self._dMoveY =0
         self._dZoom=10
-        self.cap1 = cv2.VideoCapture("video1.mp4")
-        self.cap2 = cv2.VideoCapture("video2.mp4")
-        self.cap3 = cv2.VideoCapture("video3.mp4")
-        self.cap4 = cv2.VideoCapture("video4.mp4")
-        self.cap5 = cv2.VideoCapture("video5.mp4")
-        self.cap6 = cv2.VideoCapture("video6.mp4")
+        self.cap1 = cv2.VideoCapture("videos/video1.mp4")
+        self.cap2 = cv2.VideoCapture("videos/video2.mp4")
+        self.cap3 = cv2.VideoCapture("videos/video3.mp4")
+        self.cap4 = cv2.VideoCapture("videos/video4.mp4")
+        self.cap5 = cv2.VideoCapture("videos/video5.mp4")
+        self.cap6 = cv2.VideoCapture("videos/video6.mp4")
         self.frameCount1=self.cap1.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frameCount2=self.cap2.get(cv2.CAP_PROP_FRAME_COUNT)
         self.frameCount3=self.cap3.get(cv2.CAP_PROP_FRAME_COUNT)
@@ -77,6 +77,18 @@ class ARVSMain:
         self.markerRecognizer=MarkerRecognizer()
 
         self.FaceBlankingBox =FaceBlankingBox()
+
+        #Tips
+        self.IconTipWidth=100
+        self.TextTipHight = 15
+        self.listMasks=[]
+        self.listMaskPos=[]
+        self.listMasks.append(cv2.imread("Tips/mask1.png"));self.listMaskPos.append((0*self.IconTipWidth+5,self.height-self.IconTipWidth))
+        self.listMasks.append(cv2.imread("Tips/mask2.png"));self.listMaskPos.append((1*self.IconTipWidth+5,self.height-self.IconTipWidth))
+        self.listMasks.append(cv2.imread("Tips/mask3.png"));self.listMaskPos.append((2*self.IconTipWidth+5,self.height-self.IconTipWidth))
+        self.listMasks.append(cv2.imread("Tips/mask4.png"));self.listMaskPos.append((3*self.IconTipWidth+5,self.height-self.IconTipWidth))
+        self.listMasks.append(cv2.imread("Tips/mask5.png"));self.listMaskPos.append((4*self.IconTipWidth+5,self.height-self.IconTipWidth))
+
     # InitGL
     def InitGL(self, width, height):
         glutInit()
@@ -106,6 +118,96 @@ class ARVSMain:
         gluPerspective(45.0, float(width) / float(height), 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
 
+    # operation tips
+    def DrawOperationTips(self,img):
+        iActiveIndex=0
+        #text tips
+        listActiveTextIndex=[]
+        strTips="Current state: "
+        if self.curState=="Initial":
+            iActiveIndex=0
+            strTips = strTips + "Initialization"
+            strTips = strTips +"\n  Show your hand to [Fronting]"
+        elif self.curState=="FrontView":
+            iActiveIndex=1
+            strTips = strTips + "Fronting"
+            strTips = strTips +"\n  00000 11111 : to [Translation]"
+            strTips = strTips +"\n  01000 : display video 1"
+            strTips = strTips +"\n  01100 : display video 2"
+            strTips = strTips +"\n  01110 : display video 3"
+            strTips = strTips +"\n  01111 : display video 4"
+            strTips = strTips +"\n  11111 : display video 5"
+            strTips = strTips +"\n  10001 : display video 6"
+            #active tips
+            if self.strCurFingereState=="01000":
+                listActiveTextIndex.append(1)
+            elif self.strCurFingereState == "01100":
+                listActiveTextIndex.append(2)
+            elif self.strCurFingereState=="01110":
+                listActiveTextIndex.append(3)
+            elif self.strCurFingereState=="01111":
+                listActiveTextIndex.append(4)
+            elif self.strCurFingereState == "11111":
+                listActiveTextIndex.append(5)
+            elif self.strCurFingereState=="10001":
+                listActiveTextIndex.append(6)
+        elif self.curState=="Move":
+            iActiveIndex =2
+            strTips = strTips + "Translation"
+            strTips = strTips +"\n  00000 11111 : to [Rotation]"
+            strTips = strTips +"\n  01000 : to left"
+            strTips = strTips +"\n  01100 : to right"
+            strTips = strTips +"\n  01110 : to up"
+            strTips = strTips +"\n  01111 : to down"
+            #active tips
+            if self.strCurFingereState=="01000":
+                listActiveTextIndex.append(1)
+            elif self.strCurFingereState == "01100":
+                listActiveTextIndex.append(2)
+            elif self.strCurFingereState == "01110":
+                listActiveTextIndex.append(3)
+            elif self.strCurFingereState == "01111":
+                listActiveTextIndex.append(4)
+        elif self.curState == "Rotate":
+            iActiveIndex =3
+            strTips = strTips + "Rotation"
+            strTips = strTips + "\n  00000 11111 : to [Zooming]"
+            strTips = strTips + "\n  01000 : on X axis"
+            strTips = strTips + "\n  00100 : on Y axis"
+            strTips = strTips + "\n  00010 : on Z axis"
+            strTips = strTips + "\n  10000 : reverse rotation"
+            #active tips
+            if len(self.strCurFingereState)>=5:
+                if self.strCurFingereState[1]=="1":
+                    listActiveTextIndex.append(1)
+                if self.strCurFingereState[2] == "1":
+                    listActiveTextIndex.append(2)
+                if self.strCurFingereState[3] == "1":
+                    listActiveTextIndex.append(3)
+                if self.strCurFingereState[0] == "1":
+                    listActiveTextIndex.append(4)
+        elif self.curState=="Zoom":
+            iActiveIndex =4
+            strTips = strTips + "Zooming"
+            strTips = strTips +"\n  00000 11111 : to [Fronting]"
+            strTips = strTips +"\n  01000 : zooming in"
+            strTips = strTips +"\n  01100 : zooming out"
+            #active tips
+            if self.strCurFingereState=="01000":
+                listActiveTextIndex.append(1)
+            elif self.strCurFingereState == "01100":
+                listActiveTextIndex.append(2)
+        #image tips
+        AddMasks(img,self.listMasks,self.listMaskPos,iActiveIndex)
+        #text tips
+        y0=self.height-self.IconTipWidth
+        for i, txt in enumerate(strTips.split("\n")):
+            y=self.height-self.IconTipWidth-(i+1)*self.TextTipHight
+            if i-1 in listActiveTextIndex:
+                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(255,0,0),1,None,True)
+            else:
+                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(0,255,0),1,None,True)
+
     #draw_background
     def draw_background(self,img):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -116,54 +218,14 @@ class ARVSMain:
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         bg_img = cv2.flip(img, 0)
-
+        #bg_img=img
         #operation tips
-        strTips="Current state: "
-        if self.curState=="Initial":
-            strTips = strTips + "Initial"
-            strTips = strTips +"\n  Show your hand to the state [Fronting]."
-        elif self.curState=="FrontView":
-            strTips = strTips + "Fronting"
-            strTips = strTips +"\n  00000 11111 to the state [Moving]."
-            strTips = strTips +"\n  01000 to show the video 1"
-            strTips = strTips +"\n  01100 to show the video 2"
-            strTips = strTips +"\n  01000 to show the video 3"
-            strTips = strTips +"\n  01000 to show the video 4"
-            strTips = strTips +"\n  01000 to show the video 5"
-            strTips = strTips +"\n  10001 to show the video 6"
-        elif self.curState=="Move":
-            strTips = strTips + "Moving"
-            strTips = strTips +"\n  00000 11111 to the state [Rotating]."
-            strTips = strTips +"\n  01000 to move left"
-            strTips = strTips +"\n  01100 to move right"
-            strTips = strTips +"\n  01110 to move up"
-            strTips = strTips +"\n  01111 to move down"
-        elif self.curState == "Rotate":
-            strTips = strTips + "Rotating"
-            strTips = strTips + "\n  00000 11111 to the state [Zooming]."
-            strTips = strTips + "\n  01000 rotate about X axis"
-            strTips = strTips + "\n  00100 rotate about Y axis"
-            strTips = strTips + "\n  00010 rotate about Z axis"
-            strTips = strTips + "\n  10000 reverse rotation"
-            strTips = strTips + "\n  Signals can be combined"
-        elif self.curState=="Zoom":
-            strTips = strTips + "Zooming"
-            strTips = strTips +"\n  00000 11111 to the state [Fronting]."
-            strTips = strTips +"\n  01000 to zooming in"
-            strTips = strTips +"\n  01100 to zooming out"
-
-        imgHight=img.shape[0]
-        #cv2.putText(bg_img,strTips,(20,imgHight-20),cv2.FONT_HERSHEY_COMPLEX,0.5,(255,0,0),1,None,True)
-        y0=imgHight-20
-        dy=15
-        for i, txt in enumerate(strTips.split("\n")):
-            y=imgHight-20-i*dy
-            cv2.putText(bg_img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(255,0,0),1,None,True)
+        self.DrawOperationTips(bg_img)
 
         bg_img = Image.fromarray(bg_img)
         ix = bg_img.size[0]
         iy = bg_img.size[1]
-        bg_img = bg_img.tobytes("raw", "BGRX", 0, -1)
+        bg_img = bg_img.tobytes("raw", "BGRX",0,-1)
 
 
         # Create background texture
@@ -319,7 +381,8 @@ class ARVSMain:
         # ====0.02-0.05ms====
         # get gesture #get state
         gestureRecgonizer = GestureRecognizer(self.listHandPoints)
-        strCurFingereState = gestureRecgonizer.GetFingerState()
+        self.strCurFingereState = gestureRecgonizer.GetFingerState()
+        strCurFingereState=self.strCurFingereState
         if strCurFingereState == "":
             return
         print(strCurFingereState)
