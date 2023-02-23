@@ -211,9 +211,9 @@ class ARVSMain:
         for i, txt in enumerate(strTips.split("\n")):
             y=self.height-self.IconTipWidth-(i+1)*self.TextTipHight
             if i-1 in listActiveTextIndex:
-                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(255,0,0),1,None,True)
+                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_TRIPLEX,0.5,(200,0,0),1,None,True)
             else:
-                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_COMPLEX,0.4,(0,255,0),1,None,True)
+                cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_TRIPLEX,0.5,(100,100,0),1,None,True)
 
     #draw_background
     def draw_background(self,img):
