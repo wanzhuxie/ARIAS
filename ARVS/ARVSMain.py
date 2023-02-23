@@ -79,16 +79,20 @@ class ARVSMain:
         self.FaceBlankingBox =FaceBlankingBox()
 
         #Tips
-        self.IconTipWidth=100
-        self.TextTipHight = 15
         self.listMasks=[]
+        self.listMasks.append(cv2.imread("Tips/mask1.jpg"));
+        self.listMasks.append(cv2.imread("Tips/mask2.jpg"));
+        self.listMasks.append(cv2.imread("Tips/mask3.jpg"));
+        self.listMasks.append(cv2.imread("Tips/mask4.jpg"));
+        self.listMasks.append(cv2.imread("Tips/mask5.jpg"));
         self.listMaskPos=[]
-        self.listMasks.append(cv2.imread("Tips/mask1.png"));self.listMaskPos.append((0*self.IconTipWidth+5,self.height-self.IconTipWidth))
-        self.listMasks.append(cv2.imread("Tips/mask2.png"));self.listMaskPos.append((1*self.IconTipWidth+5,self.height-self.IconTipWidth))
-        self.listMasks.append(cv2.imread("Tips/mask3.png"));self.listMaskPos.append((2*self.IconTipWidth+5,self.height-self.IconTipWidth))
-        self.listMasks.append(cv2.imread("Tips/mask4.png"));self.listMaskPos.append((3*self.IconTipWidth+5,self.height-self.IconTipWidth))
-        self.listMasks.append(cv2.imread("Tips/mask5.png"));self.listMaskPos.append((4*self.IconTipWidth+5,self.height-self.IconTipWidth))
-
+        self.TextTipHight = 15
+        self.IconTipWidth =self.listMasks[0].shape[0]
+        self.listMaskPos.append((0 * self.IconTipWidth + 5, self.height - self.IconTipWidth))
+        self.listMaskPos.append((1 * self.IconTipWidth + 5, self.height - self.IconTipWidth))
+        self.listMaskPos.append((2 * self.IconTipWidth + 5, self.height - self.IconTipWidth))
+        self.listMaskPos.append((3 * self.IconTipWidth + 5, self.height - self.IconTipWidth))
+        self.listMaskPos.append((4 * self.IconTipWidth + 5, self.height - self.IconTipWidth))
     # InitGL
     def InitGL(self, width, height):
         glutInit()
@@ -127,7 +131,10 @@ class ARVSMain:
         if self.curState=="Initial":
             iActiveIndex=0
             strTips = strTips + "Initialization"
-            strTips = strTips +"\n  Show your hand to [Fronting]"
+            if not self.bCreatedArBox:
+                strTips = strTips + "\n  Show your QR code"
+            else:
+                strTips = strTips +"\n  Show your hand to [Fronting]"
         elif self.curState=="FrontView":
             iActiveIndex=1
             strTips = strTips + "Fronting"
@@ -191,11 +198,11 @@ class ARVSMain:
             strTips = strTips + "Zooming"
             strTips = strTips +"\n  00000 11111 : to [Fronting]"
             strTips = strTips +"\n  01000 : zooming in"
-            strTips = strTips +"\n  01100 : zooming out"
+            strTips = strTips +"\n  11000 : zooming out"
             #active tips
             if self.strCurFingereState=="01000":
                 listActiveTextIndex.append(1)
-            elif self.strCurFingereState == "01100":
+            elif self.strCurFingereState == "11000":
                 listActiveTextIndex.append(2)
         #image tips
         AddMasks(img,self.listMasks,self.listMaskPos,iActiveIndex)
@@ -388,111 +395,112 @@ class ARVSMain:
         print(strCurFingereState)
         # ====0.02-0.05ms====
         #state change
-        if strCurFingereState=="00000" or strCurFingereState=="11111":
-            if strCurFingereState=="11111" and self._strLastFingerState=="00000":
-                self._bKeepState=True
-                if self.curState=="Initial":
-                    self.curState ="FrontView"
-                    print("====Initial=FrontView====")
-                elif self.curState=="FrontView":
-                    self.curState = "Move"
-                    print("====FrontView=Move====")
-                elif self.curState=="Move":
-                    self.curState = "Rotate"
-                    print("====Move=Rotate====")
-                elif self.curState=="Rotate":
-                    self.curState="Zoom"
-                    print("====Rotate=Zoom====")
-                elif self.curState=="Zoom":
+        if self.bCreatedArBox:
+            if strCurFingereState=="00000" or strCurFingereState=="11111":
+                if strCurFingereState=="11111" and self._strLastFingerState=="00000":
+                    self._bKeepState=True
+                    if self.curState=="Initial":
+                        self.curState ="FrontView"
+                        print("====Initial=FrontView====")
+                    elif self.curState=="FrontView":
+                        self.curState = "Move"
+                        print("====FrontView=Move====")
+                    elif self.curState=="Move":
+                        self.curState = "Rotate"
+                        print("====Move=Rotate====")
+                    elif self.curState=="Rotate":
+                        self.curState="Zoom"
+                        print("====Rotate=Zoom====")
+                    elif self.curState=="Zoom":
+                        self.curState = "FrontView"
+                        print("====Zoom=FrontView====")
+                elif strCurFingereState=="11111" and self.curState=="FrontView":
+                    if not self._bKeepState:
+                        self._RotateX=90
+                        self._RotateY=0
+                        self._RotateZ=0
+                self._strLastFingerState=strCurFingereState
+            else:
+                self._bKeepState = False
+                if self.curState == "Initial" and self.bCreatedArBox:
                     self.curState = "FrontView"
-                    print("====Zoom=FrontView====")
-            elif strCurFingereState=="11111" and self.curState=="FrontView":
-                if not self._bKeepState:
-                    self._RotateX=90
-                    self._RotateY=0
-                    self._RotateZ=0
-            self._strLastFingerState=strCurFingereState
-        else:
-            self._bKeepState = False
-            if self.curState == "Initial":
-                self.curState = "FrontView"
 
-            CS=strCurFingereState
-            if self.curState == "FrontView":
-                self._dZoom = -3;
+                CS=strCurFingereState
+                if self.curState == "FrontView":
+                    self._dZoom = -3;
 
-                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
-                    self._RotateX=0
-                    self._RotateY=0
-                    self._RotateZ=0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
-                    self._RotateX = 0
-                    self._RotateY = 180
-                    self._RotateZ = 0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
-                    self._RotateX=0
-                    self._RotateY=90
-                    self._RotateZ=0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
-                    self._RotateX=0
-                    self._RotateY=-90
-                    self._RotateZ=0
-                elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
-                    self._RotateX=90
-                    self._RotateY=0
-                    self._RotateZ=0
-                elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
-                    self._RotateX=-90
-                    self._RotateY=0
-                    self._RotateZ=0
-            elif self.curState == "Move":
-                dStep = 0.01
-                dDiffX = 0
-                dDiffY = 0
-                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
-                    dDiffX = -dStep
-                    dDiffY = 0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
-                    dDiffX = dStep
-                    dDiffY = 0
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                        self._RotateX=0
+                        self._RotateY=0
+                        self._RotateZ=0
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                        self._RotateX = 0
+                        self._RotateY = 180
+                        self._RotateZ = 0
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                        self._RotateX=0
+                        self._RotateY=90
+                        self._RotateZ=0
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                        self._RotateX=0
+                        self._RotateY=-90
+                        self._RotateZ=0
+                    elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                        self._RotateX=90
+                        self._RotateY=0
+                        self._RotateZ=0
+                    elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
+                        self._RotateX=-90
+                        self._RotateY=0
+                        self._RotateZ=0
+                elif self.curState == "Move":
+                    dStep = 0.005
                     dDiffX = 0
-                    dDiffY = -dStep
-                elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    dDiffY = 0
+                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                        dDiffX = -dStep
+                        dDiffY = 0
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                        dDiffX = dStep
+                        dDiffY = 0
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                        dDiffX = 0
+                        dDiffY = dStep
+                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                        dDiffX = 0
+                        dDiffY = -dStep
+
+                    self._dMoveX+=dDiffX
+                    self._dMoveY+=dDiffY
+                elif self.curState == "Rotate":
+                    dStep = 1
                     dDiffX = 0
-                    dDiffY = dStep
+                    dDiffY = 0
+                    dDiffZ = 0
 
-                self._dMoveX+=dDiffX
-                self._dMoveY+=dDiffY
-            elif self.curState == "Rotate":
-                dStep = 2
-                dDiffX = 0
-                dDiffY = 0
-                dDiffZ = 0
-
-                if CS[0] == "1":
-                    dStep=-dStep
-                if CS[1] == "1":
-                    dDiffX=dStep
-                if CS[2] == "1":
-                    dDiffY=dStep
-                if CS[3] == "1":
-                    dDiffZ=dStep
-                self._RotateX +=dDiffX
-                self._RotateY +=dDiffY
-                self._RotateZ +=dDiffZ
-            elif self.curState == "Zoom":
-                dStep = 0.1
-                dDiff = 0
-                if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
-                    dDiff = -dStep
-                if CS[0]=="1" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
-                    dDiff = dStep
-                self._dZoom+=dDiff
-                if self._dZoom>-1.5:
-                    self._dZoom=-1.5
-                elif self._dZoom<-15:
-                    self._dZoom = -15
+                    if CS[0] == "1":
+                        dStep=-dStep
+                    if CS[1] == "1":
+                        dDiffX=dStep
+                    if CS[2] == "1":
+                        dDiffY=dStep
+                    if CS[3] == "1":
+                        dDiffZ=dStep
+                    self._RotateX +=dDiffX
+                    self._RotateY +=dDiffY
+                    self._RotateZ +=dDiffZ
+                elif self.curState == "Zoom":
+                    dStep = 0.02
+                    dDiff = 0
+                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                        dDiff = -dStep
+                    if CS[0]=="1" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                        dDiff = dStep
+                    self._dZoom+=dDiff
+                    if self._dZoom>-1.5:
+                        self._dZoom=-1.5
+                    elif self._dZoom<-15:
+                        self._dZoom = -15
 
     # Box 0.1-0.2ms
     def DrawBox(self):
