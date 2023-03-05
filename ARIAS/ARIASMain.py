@@ -19,7 +19,7 @@ import threading
 import numpy as np
 from FaceBlanking import *
 
-class ARVSMain:
+class ARIASMain:
     def __init__(self):
         self.cap0 = cv2.VideoCapture(0)
         self.width, self.height = map(int, (self.cap0.get(3), self.cap0.get(4)))
@@ -98,7 +98,7 @@ class ARVSMain:
         glutInit()
         glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
         glutInitWindowSize(width, height)
-        self.window = glutCreateWindow("ARVS")
+        self.window = glutCreateWindow("ARIAS")
         glutDisplayFunc(self.Draw)
         glutIdleFunc(self.Draw)
 
@@ -601,7 +601,7 @@ class ARVSMain:
         glutMainLoop()
 
 if __name__ == '__main__':
-    w = ARVSMain()
+    w = ARIASMain()
     t = threading.Thread(target=w.GetHandPoints)
     t.start()
     w.MainLoop()
