@@ -138,7 +138,6 @@ class ARIASMain:
         elif self.curState=="FrontView":
             iActiveIndex=1
             strTips = strTips + "Fronting"
-            strTips = strTips +"\n  00000 11111 : to [Translation]"
             strTips = strTips +"\n  01000 : display video 1"
             strTips = strTips +"\n  01100 : display video 2"
             strTips = strTips +"\n  01110 : display video 3"
@@ -161,7 +160,6 @@ class ARIASMain:
         elif self.curState=="Move":
             iActiveIndex =2
             strTips = strTips + "Translation"
-            strTips = strTips +"\n  00000 11111 : to [Rotation]"
             strTips = strTips +"\n  01000 : to left"
             strTips = strTips +"\n  01100 : to right"
             strTips = strTips +"\n  01110 : to up"
@@ -178,7 +176,6 @@ class ARIASMain:
         elif self.curState == "Rotate":
             iActiveIndex =3
             strTips = strTips + "Rotation"
-            strTips = strTips + "\n  00000 11111 : to [Zooming]"
             strTips = strTips + "\n  01000 : on X axis"
             strTips = strTips + "\n  00100 : on Y axis"
             strTips = strTips + "\n  00010 : on Z axis"
@@ -196,7 +193,6 @@ class ARIASMain:
         elif self.curState=="Zoom":
             iActiveIndex =4
             strTips = strTips + "Zooming"
-            strTips = strTips +"\n  00000 11111 : to [Fronting]"
             strTips = strTips +"\n  01000 : zooming in"
             strTips = strTips +"\n  11000 : zooming out"
             #active tips
@@ -210,13 +206,14 @@ class ARIASMain:
         y0=self.height-self.IconTipWidth
         for i, txt in enumerate(strTips.split("\n")):
             y=self.height-self.IconTipWidth-(i+1)*self.TextTipHight
-            if i-1 in listActiveTextIndex:
+            if i in listActiveTextIndex:
                 cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_TRIPLEX,0.5,(200,0,0),1,None,True)
             else:
                 cv2.putText(img,txt,(20,y),cv2.FONT_HERSHEY_TRIPLEX,0.5,(100,100,0),1,None,True)
 
     #draw_background
     def draw_background(self,img):
+        #img[:]=[255,255,255]
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         # Setting background image project_matrix and model_matrix.
         glMatrixMode(GL_PROJECTION)
@@ -580,6 +577,8 @@ class ARIASMain:
 
         if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         success, img = cap.read()
+        if success==False:
+            return None
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
         img=cv2.flip(img,0)
 

@@ -1,14 +1,17 @@
 
 ----------
 
-# ARVS
+# ARIAS
 
-Design of an interactive advertising system
+ARIAS: An interactive advertising system based on augmented reality.
 
 ## Introduction
 
-It is an interactive video playback system based on augmented reality and gesture recognition. The system recognizes the image captured by the camera in real time. When there is a predefined square marker, the cube is created at the marker position, and the pre configured video files are played on the six faces of the cube. The cube can be manipulated through gestures. It can be used for campus publicity, shopping mall guidance, scenic spot introduction, etc.
-
+It is an interactive video playback system based on augmented reality and gesture recognition. The system recognizes the image captured by the camera in real time. When there is a predefined square marker, A cube is created at the marker position, and the pre configured video files are played on the six faces of the cube. The cube can be manipulated through gestures. It can be used for campus publicity, shopping mall guidance, scenic spot introduction, etc.
+## Use guide
+1. Ensure the computer has at leat one webcamera. Install Python and other external library.
+2. Show one marker the webcamera.The markers can be find in "Markers" folder. Now the feedback of the system will contain a virtual box on the marker.
+3. 
 ## Marker definition
 
 1. 5x5 white cells with black background. There are four corners of the marker and only one corner is an isolated cell, that is, the surrounding color is black. The last row and the last column have white cells, that is the sum of the values in the last row and the last column cannot be 0 (black 0, white 1)
