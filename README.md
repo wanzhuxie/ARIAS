@@ -8,7 +8,7 @@ ARIAS: An AR-based interactive advertising system.
 ## Introduction
 
 It is an interactive video playback system based on augmented reality and gesture recognition. The system recognizes the image captured by the camera in real time. When there is a predefined square marker, A cube is created at the marker position, and the pre configured video files are played on the six faces of the cube. The cube can be manipulated through gestures. It can be used for campus publicity, shopping mall guidance, scenic spot introduction, etc.
-![result image](https://github.com/wanzhuxie/ARIAS/tree/PLOS-ONE/result/image1.png) 
+ ![](https://github.com/wanzhuxie/ARIAS/tree/PLOS-ONE/result/image1.png) 
 ## User guide
 1. Ensure the computer has at leat one webcamera. 
 2. Install Python and other external library(MeadiaPipe, OpenCV, OpenGL...).
@@ -49,14 +49,11 @@ The three fingers can be combined arbitrarily, and when the thumb is expanded, t
 1. Zoom in: 01000
 2. Zoom out: 11000
 
- 
 ## Marker definition
 1. 5x5 white cells with black background. There are four corners of the marker and only one corner is an isolated cell, that is, the surrounding color is black. The last row and the last column have white cells, that is the sum of the values in the last row and the last column cannot be 0 (black 0, white 1)
 2. The marker with isolated cell in the upper left corner is regarded as the standard marker. When the isolated cell is at the other three corners, the marker is considered to be the result of plane rotation on the basis of the standard marker. 
-![marker image](https://github.com/wanzhuxie/ARIAS/tree/PLOS-ONE/Marker/Marker.png) 
-
+![](https://github.com/wanzhuxie/ARIAS/tree/PLOS-ONE/Marker/Marker.png) 
 ## Software architecture
-
 - GeneralFunctions:
 Some common methods for the whole workspace.
 
