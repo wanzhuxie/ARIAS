@@ -575,7 +575,11 @@ class ARIASMain:
             glBindTexture(GL_TEXTURE_2D, i)
             return None
 
-        if cap.get(cv2.CAP_PROP_POS_FRAMES) == frameCount:    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        frameIndex=cap.get(cv2.CAP_PROP_POS_FRAMES)
+        #print(frameIndex,"/",frameCount)
+        #OpenCV cannot read the last few frames of some intercepted videos
+        if frameIndex == frameCount-5:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
         success, img = cap.read()
         if success==False:
             return None
