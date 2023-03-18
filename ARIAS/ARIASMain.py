@@ -29,6 +29,8 @@ class ARIASMain:
         self.curState="Initial"
         self._bKeepState=False
         self._strLastFingerState=""
+        self._01111_Times=0
+        self._0111_Legal_Times=3
 
         #world corner coor of the marker
         self.worldMarkerCorner=np.array([[-0.5, -0.5, 0],[-0.5, 0.5, 0],[0.5, 0.5, 0],[0.5, -0.5, 0]],dtype = np.float64)
@@ -392,6 +394,12 @@ class ARIASMain:
         # ====0.02-0.05ms====
         #state change
         if self.bCreatedArBox:
+            if strCurFingereState=="01111" and self._strLastFingerState=="00000":
+                if self._01111_Times < self._0111_Legal_Times:
+                    self._01111_Times=self._01111_Times+1
+                    return
+                else:
+                    self._01111_Times=0
             if strCurFingereState=="00000" or strCurFingereState=="11111":
                 if strCurFingereState=="11111":
                     if self._strLastFingerState=="00000":
