@@ -393,59 +393,61 @@ class ARIASMain:
         #state change
         if self.bCreatedArBox:
             if strCurFingereState=="00000" or strCurFingereState=="11111":
-                if strCurFingereState=="11111" and self._strLastFingerState=="00000":
-                    self._bKeepState=True
-                    if self.curState=="Initial":
-                        self.curState ="FrontView"
-                        print("====Initial=FrontView====")
+                if strCurFingereState=="11111":
+                    if self._strLastFingerState=="00000":
+                        self._bKeepState=True
+                        if self.curState=="Initial":
+                            self.curState ="FrontView"
+                            print("====Initial=FrontView====")
+                        elif self.curState=="FrontView":
+                            self.curState = "Move"
+                            print("====FrontView=Move====")
+                        elif self.curState=="Move":
+                            self.curState = "Rotate"
+                            print("====Move=Rotate====")
+                        elif self.curState=="Rotate":
+                            self.curState="Zoom"
+                            print("====Rotate=Zoom====")
+                        elif self.curState=="Zoom":
+                            self.curState = "FrontView"
+                            print("====Zoom=FrontView====")
                     elif self.curState=="FrontView":
-                        self.curState = "Move"
-                        print("====FrontView=Move====")
-                    elif self.curState=="Move":
-                        self.curState = "Rotate"
-                        print("====Move=Rotate====")
-                    elif self.curState=="Rotate":
-                        self.curState="Zoom"
-                        print("====Rotate=Zoom====")
-                    elif self.curState=="Zoom":
-                        self.curState = "FrontView"
-                        print("====Zoom=FrontView====")
-                elif strCurFingereState=="11111" and self.curState=="FrontView":
-                    if not self._bKeepState:
-                        self._RotateX=90
-                        self._RotateY=0
-                        self._RotateZ=0
+                        if not self._bKeepState:
+                            self._RotateX=90
+                            self._RotateY=0
+                            self._RotateZ=0
                 self._strLastFingerState=strCurFingereState
             else:
                 self._bKeepState = False
-                if self.curState == "Initial" and self.bCreatedArBox:
+                self._strLastFingerState=""
+                if self.curState == "Initial":
                     self.curState = "FrontView"
 
                 CS=strCurFingereState
                 if self.curState == "FrontView":
-                    self._dZoom = -3;
+                    self._dZoom = -3
 
-                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    if CS=="01000":
                         self._RotateX=0
                         self._RotateY=0
                         self._RotateZ=0
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                    elif CS == "01100":
                         self._RotateX = 0
                         self._RotateY = 180
                         self._RotateZ = 0
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                    elif CS == "01110":
                         self._RotateX=0
                         self._RotateY=90
                         self._RotateZ=0
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    elif CS == "01111":
                         self._RotateX=0
                         self._RotateY=-90
                         self._RotateZ=0
-                    elif CS[0] == "1" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    elif CS == "11111":
                         self._RotateX=90
                         self._RotateY=0
                         self._RotateZ=0
-                    elif CS[0] == "1" and CS[1] == "0" and CS[2] == "0" and CS[3] == "0" and CS[4] == "1":
+                    elif CS == "10001":
                         self._RotateX=-90
                         self._RotateY=0
                         self._RotateZ=0
@@ -453,16 +455,16 @@ class ARIASMain:
                     dStep = 0.005
                     dDiffX = 0
                     dDiffY = 0
-                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    if CS=="01000":
                         dDiffX = -dStep
                         dDiffY = 0
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "0" and CS[4] == "0":
+                    elif CS == "01100":
                         dDiffX = dStep
                         dDiffY = 0
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "0":
+                    elif CS == "01110":
                         dDiffX = 0
                         dDiffY = dStep
-                    elif CS[0] == "0" and CS[1] == "1" and CS[2] == "1" and CS[3] == "1" and CS[4] == "1":
+                    elif CS == "01111":
                         dDiffX = 0
                         dDiffY = -dStep
 
@@ -488,9 +490,9 @@ class ARIASMain:
                 elif self.curState == "Zoom":
                     dStep = 0.02
                     dDiff = 0
-                    if CS[0]=="0" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    if CS=="01000":
                         dDiff = -dStep
-                    if CS[0]=="1" and CS[1]=="1" and CS[2]=="0" and CS[3]=="0" and CS[4]=="0":
+                    if CS=="11000":
                         dDiff = dStep
                     self._dZoom+=dDiff
                     if self._dZoom>-1.5:
