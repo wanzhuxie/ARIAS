@@ -322,7 +322,6 @@ class ARIASMain:
             listMarkers=self.markerRecognizer.Recognize(self.img0)
             #markerRecognizer2=time.perf_counter()
             #print ("markerRecognizer:", "%.2f" % ((markerRecognizer2-markerRecognizer1)*1000), "ms")
-
         ##15-19ms
         self.LoadTexture()
 
@@ -374,7 +373,7 @@ class ARIASMain:
         glutSwapBuffers()
 
         timePoint2=time.perf_counter()
-        print ("draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+        #print ("draw:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
 
     def GestureControl(self):
         # Rotate around the x, y, z axes respectively
@@ -562,7 +561,7 @@ class ARIASMain:
         if self.curState!="Initial":
             self.FaceBlankingBox.SetRotation(self._RotateX,self._RotateY,self._RotateZ)
             listHideFaces=self.FaceBlankingBox.GetHideFaces()
-
+        glDeleteTextures(14)
         self.CreateOneTexture(listHideFaces,0,self.cap1,self.frameCount1)
         self.CreateOneTexture(listHideFaces,1,self.cap2,self.frameCount2)
         self.CreateOneTexture(listHideFaces,2,self.cap3,self.frameCount3)

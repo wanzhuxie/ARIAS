@@ -44,7 +44,7 @@ def AddWeightWithoutWhite(imgMain,ratio1,imgMask,ratio2):
         imgMain = cv2.addWeighted(imgMain, ratio1, imgMask, ratio2, 0)
 
     timePoint2=time.perf_counter()
-    print ("AddWeightWithoutWhite:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
+    #print ("AddWeightWithoutWhite:", "%.2f" % ((timePoint2-timePoint1)*1000), "ms")
 
     return imgMain
 

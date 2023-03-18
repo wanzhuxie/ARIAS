@@ -39,19 +39,21 @@ class GestureRecognizer:
 
         # Judge the min distance between the thumb tip and these points
         listPointForCheckDis = [6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20]
-        listDis = []
+        listDisX=[];listDisY=[]
         for i in listPointForCheckDis:
-            listDis.append(np.abs(self.listHandPoints[i].X - self.listHandPoints[4].X))
-            listDis.append(np.abs(self.listHandPoints[i].X - self.listHandPoints[3].X))
-        listDis.sort()
-        minDis = listDis[0]
-        # print("     ",int(dPalmDiameter),"--",np.abs(self.listHandPoints[3].X-self.listHandPoints[4].X)*20,"--",minDis*10)
+            listDisX.append( np.abs(self.listHandPoints[i].X - self.listHandPoints[4].X))
+            listDisX.append( np.abs(self.listHandPoints[i].X - self.listHandPoints[3].X))
+            listDisY.append( np.abs(self.listHandPoints[i].Y - self.listHandPoints[4].Y))
+            listDisY.append( np.abs(self.listHandPoints[i].Y - self.listHandPoints[3].Y))
+        listDisX.sort();listDisY.sort();
+        minDisX=listDisX[0];minDisY=listDisY[0]
+        #print("     ",int(dPalmDiameter),"--",np.abs(self.listHandPoints[3].X-self.listHandPoints[4].X)*20,"--",minDis*10)
 
-        # Judge the X distance between 3 and 4. The thumb is closed if it is small
-        if np.abs(self.listHandPoints[3].X - self.listHandPoints[4].X) * 20 < dPalmDiameter:
+        #Judge the X distance between 3 and 4. The thumb is closed if it is small
+        if np.abs(self.listHandPoints[3].X-self.listHandPoints[4].X)*20 <dPalmDiameter :
             result = result + "0"
-        # Judge the min distance between the thumb tip and these points
-        elif minDis * 7 < dPalmDiameter:
+        #Judge the min distance between the thumb tip and these points
+        elif minDisX*7<dPalmDiameter and minDisY*7<dPalmDiameter:
             result = result + "0"
         else:  # Otherwise, continue to judge whether it is closed
             if isRightHand:  # right hand
